@@ -1773,4 +1773,132 @@ window.addEventListener('load', function() {
       cb.addEventListener('change', () => {
         try {
           if (cb.checked) { localStorage.setItem(key, '1'); div.classList.add('done'); }
-          else { localStorage.removeItem
+          else { localStorage.removeItem(key); div.classList.remove('done'); }
+        } catch (e) {}
+        updateProgress();
+      });
+      container.appendChild(div);
+    });
+  }
+
+  function updateProgress(weekNum) {
+    let total = 0, checked = 0;
+    pcmbBooks.forEach(book => {
+      total += book.chapters.length;
+      book.chapters.forEach((c, i) => { if (isChapterDone(book.key, i)) checked++; });
+    });
+    const pct = total ? Math.round((checked / total) * 100) : 0;
+    document.getElementById('ringPct').textContent = pct + '%';
+    document.getElementById('ringSub').textContent = `${checked} of ${total} chapters done`;
+    const circumference = 201;
+    const offset = circumference - (pct / 100) * circumference;
+    document.getElementById('ringProgress').style.strokeDashoffset = offset;
+  }
+
+  let selectedDay = null; // null = auto-follow today
+
+  function render(weekNum) {
+    document.getElementById('weekLabel').textContent = `Week ${weekNum}`;
+    document.getElementById('weekDate').textContent = fmt(dateForWeek(weekNum));
+
+    const phase = phaseInfo(weekNum);
+    document.getElementById('phasePill').textContent = phase.pill;
+    document.getElementById('phaseCard').innerHTML = `<b>${phase.title}</b>${phase.text}`;
+
+    document.getElementById('statWeeksIn').textContent = weekNum;
+    document.getElementById('statPhaseShort').textContent = phase.pill;
+    const hscEstimate = new Date(2028, 3, 15);
+    const weeksLeft = Math.max(0, Math.round((hscEstimate - dateForWeek(weekNum)) / (7 * 24 * 60 * 60 * 1000)));
+    document.getElementById('statWeeksLeft').textContent = weeksLeft;
+
+    renderVocabTargets(weekNum);
+    renderPcmbProgress(weekNum);
+    renderRevisionTab();
+
+    // ---- Day-by-day breakdown ----
+    const weekStart = dateForWeek(weekNum);
+    const isRealCurrentWeek = weekNum === Math.max(1, weekNumberFor(today));
+    const realTodayIndex = Math.floor((today - weekStart) / (24*60*60*1000));
+
+    if (selectedDay === null && isRealCurrentWeek && realTodayIndex >= 0 && realTodayIndex <= 6) {
+      selectedDay = realTodayIndex;
+    } else if (selectedDay === null) {
+      selectedDay = 0;
+    }
+
+    const strip = document.getElementById('dayStrip');
+    strip.innerHTML = '';
+    for (let idx = 0; idx < 7; idx++) {
+      const d = new Date(weekStart);
+      d.setDate(d.getDate() + idx);
+      const pill = document.createElement('div');
+      pill.className = 'daypill'
+        + (idx === selectedDay ? ' selected' : '')
+        + (isRealCurrentWeek && idx === realTodayIndex ? ' istoday' : '');
+      pill.innerHTML = `<div class="dname">${weekdayNames[d.getDay()]}</div><div class="dnum">${d.getDate()}</div><div class="dcheck"></div>`;
+      pill.addEventListener('click', () => { selectedDay = idx; render(currentWeek); });
+      strip.appendChild(pill);
+    }
+
+    const dDate = new Date(weekStart);
+    dDate.setDate(dDate.getDate() + selectedDay);
+    const isActualToday = isRealCurrentWeek && selectedDay === realTodayIndex;
+    document.getElementById('dayTitle').textContent = isActualToday ? 'Today' : dDate.toLocaleDateString(undefined, { weekday: 'long' });
+    document.getElementById('daySub').textContent = dDate.toLocaleDateString(undefined, { month: 'long', day: 'numeric' });
+
+    renderPcmbFocus(weekNum, dDate);
+    renderVocabDayTasks(weekNum, dDate, selectedDay);
+    renderOtherFocus(weekNum, dDate);
+
+    document.getElementById('dayCelebrate').style.display = 'none';
+
+    const notesKey = `notes-wk${weekNum}`;
+    const notesBox = document.getElementById('notesBox');
+    try { notesBox.value = localStorage.getItem(notesKey) || ''; } catch(e) { notesBox.value = ''; }
+    notesBox.oninput = () => { try { localStorage.setItem(notesKey, notesBox.value); } catch(e) {} };
+
+    updateProgress(weekNum);
+  }
+
+  wireDoubleTapReset(
+    document.getElementById('resetAllBtn'),
+    'সব বই Reset করো',
+    'আবার ট্যাপ করো — সব মুছে যাবে!',
+    () => { pcmbBooks.forEach(book => resetBookProgress(book.key)); render(currentWeek); }
+  );
+
+  document.getElementById('revPrevDay').addEventListener('click', () => {
+    revisionDayOffset -= 1;
+    renderRevisionTab();
+  });
+  document.getElementById('revNextDay').addEventListener('click', () => {
+    revisionDayOffset += 1;
+    renderRevisionTab();
+  });
+
+  document.getElementById('prevWeek').addEventListener('click', () => {
+    currentWeek = Math.max(1, currentWeek - 1);
+    selectedDay = null;
+    render(currentWeek);
+  });
+  document.getElementById('nextWeek').addEventListener('click', () => {
+    currentWeek += 1;
+    selectedDay = null;
+    render(currentWeek);
+  });
+
+  document.querySelectorAll('.tabbtn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tabbtn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('screen-' + btn.dataset.screen).classList.add('active');
+    });
+  });
+
+  render(currentWeek);
+})();
+</script>
+
+</body>
+</html>
