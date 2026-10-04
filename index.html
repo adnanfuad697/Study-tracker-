@@ -699,6 +699,367 @@
   .tabbtn.active { color: var(--accent); }
   .tabbtn svg { width: 21px; height: 21px; }
   .tabbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+  .trackrow {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .trackbtn {
+    flex: 1;
+    padding: 10px 6px;
+    border-radius: 12px;
+    border: 1.5px solid var(--line);
+    background: var(--surface);
+    color: var(--ink-muted);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .trackbtn.active {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .timerbox {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 14px;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+  .timerdisplay {
+    font-size: 36px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+    margin: 4px 0 12px;
+  }
+  .timerbtns {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+  }
+  .timerbtns button {
+    padding: 10px 18px;
+    border-radius: 12px;
+    border: none;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .timerbtns .tstart { background: var(--accent); color: #fff; }
+  .timerbtns .tpause { background: var(--warn-soft); color: var(--warn); }
+  .timerbtns .treset { background: var(--bg); color: var(--ink-muted); border: 1px solid var(--line); }
+  .timerstats {
+    font-size: 12px;
+    color: var(--ink-muted);
+    margin-top: 10px;
+  }
+  .mockform, .backupbox {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 14px;
+    margin-bottom: 14px;
+  }
+  .mockform .mrow {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 10px;
+  }
+  .mockform label, .backupbox label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink-muted);
+    text-transform: uppercase;
+  }
+  .mockform select, .mockform input, .mockform textarea {
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: var(--bg);
+    color: var(--ink);
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .mockform textarea { min-height: 60px; font-weight: 500; resize: vertical; }
+  .mocksave, .backupbtn {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 12px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+  .backupbtn.secondary {
+    background: var(--bg);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    margin-top: 8px;
+  }
+  .mocklist .mockitem {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+  }
+  .mockitem .mtop {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .mockitem .msub { font-weight: 700; font-size: 14px; }
+  .mockitem .mscore { font-weight: 800; color: var(--accent); font-size: 16px; }
+  .mockitem .mmeta { font-size: 11px; color: var(--ink-muted); margin-top: 4px; }
+  .mockitem .mnote { font-size: 13px; margin-top: 6px; color: var(--ink); }
+  .mockitem .mdel {
+    border: none;
+    background: none;
+    color: #B23A3A;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 6px;
+    padding: 0;
+  }
+
+  /* Premium modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(8, 12, 24, 0.55);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.22s ease, visibility 0.22s ease;
+  }
+  .modal-overlay.open {
+    opacity: 1;
+    visibility: visible;
+  }
+  .modal-card {
+    width: 100%;
+    max-width: 340px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    padding: 22px 20px 16px;
+    box-shadow: 0 24px 48px rgba(0,0,0,0.28), 0 0 0 1px rgba(255,255,255,0.04) inset;
+    transform: translateY(12px) scale(0.96);
+    transition: transform 0.22s ease;
+  }
+  .modal-overlay.open .modal-card {
+    transform: translateY(0) scale(1);
+  }
+  .modal-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    margin-bottom: 12px;
+    background: var(--accent-soft);
+  }
+  .modal-title {
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--ink);
+    margin: 0 0 6px;
+    letter-spacing: -0.02em;
+  }
+  .modal-msg {
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: var(--ink-muted);
+    margin: 0 0 18px;
+  }
+  .modal-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .modal-actions button {
+    flex: 1;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: none;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .modal-btn-cancel {
+    background: var(--bg);
+    color: var(--ink-muted);
+    border: 1px solid var(--line) !important;
+  }
+  .modal-btn-ok {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(36, 85, 199, 0.35);
+  }
+  .modal-btn-danger {
+    background: #B23A3A;
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(178, 58, 58, 0.3);
+  }
+  /* Toast */
+  .toast-wrap {
+    position: fixed;
+    bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    z-index: 10000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s;
+    pointer-events: none;
+    width: min(90%, 320px);
+  }
+  .toast-wrap.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+  }
+  .toast {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    color: var(--ink);
+    padding: 12px 16px;
+    border-radius: 14px;
+    font-size: 13.5px;
+    font-weight: 600;
+    text-align: center;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.2);
+  }
+
+  /* Hide ugly native select look; we use custom dropdowns */
+  select.chapterpick,
+  select.premium-select {
+    display: none !important;
+  }
+  .cselect {
+    position: relative;
+    width: 100%;
+    margin-top: 4px;
+  }
+  .cselect-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 11px 14px;
+    border-radius: 12px;
+    border: 1.5px solid var(--line);
+    background: var(--bg);
+    color: var(--ink);
+    font-size: 13.5px;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+    line-height: 1.35;
+  }
+  .cselect-btn:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+  .cselect-btn .chev {
+    flex-shrink: 0;
+    color: var(--ink-muted);
+    font-size: 12px;
+  }
+  .cselect-menu {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(100% + 6px);
+    z-index: 50;
+    max-height: 260px;
+    overflow-y: auto;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    box-shadow: 0 16px 40px rgba(0,0,0,0.18);
+    padding: 6px;
+    display: none;
+  }
+  .cselect.open .cselect-menu { display: block; }
+  .cselect-opt {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 11px 12px;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--ink);
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    line-height: 1.35;
+  }
+  .cselect-opt:hover, .cselect-opt:focus {
+    background: var(--accent-soft);
+    color: var(--accent);
+    outline: none;
+  }
+  .cselect-opt.selected {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .cselect-opt:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
+
+  .timerbtns button:active {
+    transform: scale(0.96);
+    opacity: 0.9;
+  }
+  .timerbtns .tstart.running {
+    background: #2d8a4e;
+    box-shadow: 0 0 0 3px rgba(45, 138, 78, 0.25);
+  }
+  .timerbtns .tpause.is-paused {
+    outline: 2px solid var(--accent);
+  }
+  .completebtn:active {
+    transform: scale(0.92);
+  }
+  .trackbtn:active {
+    transform: scale(0.97);
+  }
+  .tabbtn:active {
+    opacity: 0.75;
+  }
+  .backupbtn:active, .mocksave:active, .msave:active {
+    transform: scale(0.98);
+    opacity: 0.9;
+  }
+  .cselect-btn:active {
+    transform: scale(0.99);
+  }
+  .daypill:active {
+    transform: scale(0.96);
+  }
 </style>
 </head>
 <body>
@@ -759,10 +1120,28 @@
 
       <div class="phasecard" id="phaseCard"></div>
 
+      <p class="grouptitle">TRACK — BUET / MEDICAL</p>
+      <div class="trackrow" id="trackRow">
+        <button type="button" class="trackbtn" data-track="both">Both</button>
+        <button type="button" class="trackbtn" data-track="buet">BUET</button>
+        <button type="button" class="trackbtn" data-track="medical">Medical</button>
+      </div>
+
+      <p class="grouptitle">STUDY TIMER</p>
+      <div class="timerbox">
+        <div class="timerdisplay" id="timerDisplay">00:00:00</div>
+        <div class="timerbtns">
+          <button type="button" class="tstart" id="timerStart">Start</button>
+          <button type="button" class="tpause" id="timerPause">Pause</button>
+          <button type="button" class="treset" id="timerReset">Reset</button>
+        </div>
+        <div class="timerstats" id="timerStats">আজ: 0 মিনিট · এই সপ্তাহ: 0 মিনিট</div>
+      </div>
+
       <p class="grouptitle" style="margin-top:4px;">THIS WEEK, DAY BY DAY</p>
       <div class="daystrip" id="dayStrip"></div>
 
-      <p class="grouptitle">TODAY'S CHAPTER — PCMB <span style="font-weight:500;text-transform:none;font-size:11px;color:var(--ink-muted);">(পৃষ্ঠা লিখে ✓ দাও)</span></p>
+      <p class="grouptitle">TODAY'S CHAPTER — PCMB</p>
       <div class="daycard">
         <div id="pcmbFocusTasks"></div>
       </div>
@@ -789,7 +1168,7 @@
     <!-- SUBJECTS -->
     <section class="screen" id="screen-subjects">
       <h2 class="screentitle">Subjects</h2>
-      <p class="screensub">প্রতি অধ্যায়ে পৃষ্ঠা লিখো + ✓ চাপো → রিভিশন অটো সিডিউল হবে (১→৭→১৫→৩০→৯০ দিন)।</p>
+      <p class="screensub">পৃষ্ঠা আপডেট করো · checkbox = chapter শেষ</p>
 
       <button id="resetAllBtn" class="resetallbtn">সব বই Reset করো</button>
       <div id="pcmbProgress"></div>
@@ -819,9 +1198,40 @@
 
     <!-- NOTES -->
     <section class="screen" id="screen-notes">
-      <h2 class="screentitle">Notes</h2>
-      <p class="screensub">What worked, what didn't, what needs another pass.</p>
+      <h2 class="screentitle">Notes & Tools</h2>
+      <p class="screensub">নোট, mock স্কোর, backup।</p>
       <textarea id="notesBox" placeholder="Write freely — this is just for you."></textarea>
+
+      <p class="grouptitle" style="margin-top:20px;">MOCK / EXAM SCORE</p>
+      <div class="mockform">
+        <div class="mrow">
+          <label>বিষয়</label>
+          <div id="mockSubjectMount"></div>
+          <input type="hidden" id="mockSubject" value="Physics">
+        </div>
+        <div class="mrow">
+          <label>স্কোর (যেমন 45/50)</label>
+          <input type="text" id="mockScore" placeholder="45/50 বা 90%">
+        </div>
+        <div class="mrow">
+          <label>তারিখ</label>
+          <input type="date" id="mockDate">
+        </div>
+        <div class="mrow">
+          <label>নোট (optional)</label>
+          <textarea id="mockNote" placeholder="কী ভুল হয়েছিল..."></textarea>
+        </div>
+        <button type="button" class="mocksave" id="mockSaveBtn">স্কোর সেভ করো</button>
+      </div>
+      <div id="mockList"></div>
+
+      <p class="grouptitle" style="margin-top:20px;">BACKUP</p>
+      <div class="backupbox">
+        <p style="font-size:13px;color:var(--ink-muted);margin:0 0 10px;line-height:1.4;">সব progress JSON ফাইলে সেভ করো। ফোন/ব্রাউজার বদলালে restore করতে পারবে।</p>
+        <button type="button" class="backupbtn" id="backupExport">Export backup</button>
+        <button type="button" class="backupbtn secondary" id="backupImport">Import backup</button>
+        <input type="file" id="backupFile" accept="application/json,.json" style="display:none">
+      </div>
     </section>
 
   </div>
@@ -858,7 +1268,7 @@ window.addEventListener('load', function() {
 });
 
 (function() {
-  const START_DATE = new Date(2026, 8, 26);
+  const START_DATE = new Date(2026, 9, 5); // Week 1 starts 5 Oct 2026
 
   const englishRotation = [
     { topic: "Article (a / an / the) & Gap Filling", tip: "Rules first, memorization second. Focus on the exceptions — that's where marks are lost.", part: "Paper 2 · Grammar" },
@@ -993,11 +1403,12 @@ window.addEventListener('load', function() {
 
   // 5-stage revision content, matching your schedule: 1 day, 7 days, 15 days, 30 days, 90 days (then repeats).
   const PCMB_REVISION_STAGE_TEXT = [
-    'মূল বইয়ের দাগানো লাইন ও সূত্র দেখো',
-    'শর্ট নোট ও বেসিক কনসেপ্ট রিভাইজ করো',
-    'কঠিন ও গুরুত্বপূর্ণ টপিক আবার দেখো',
-    'টেস্ট পেপার ও বোর্ড প্রশ্ন (CQ + MCQ) সলভ করো',
-    'ফর্মুলা বুক ও শর্ট নোট রিভিশন করো'
+    'মূল বইয়ের দাগানো লাইন ও সূত্র দেখো',       // 1 day
+    'শর্ট নোট ও বেসিক কনসেপ্ট রিভাইজ করো',     // 3 days
+    'কঠিন ও গুরুত্বপূর্ণ টপিক আবার দেখো',        // 7 days
+    'টেস্ট পেপার ও বোর্ড প্রশ্ন (CQ + MCQ) সলভ করো', // 15 days
+    'ফর্মুলা বুক ও শর্ট নোট রিভিশন করো',         // 30 days
+    'ফুল রিভিশন — সূত্র + নোট + প্রশ্ন'           // 90 days (repeat)
   ];
 
   // Every day is now a study day — revision lives only in the Revision tab.
@@ -1023,6 +1434,39 @@ window.addEventListener('load', function() {
     6: { type: 'study', books: ['ict', 'gk'] }           // Saturday
   };
 
+
+
+
+  // ---- Dual track: both | buet | medical ----
+  function getTrack() {
+    try { return localStorage.getItem('study-track') || 'both'; } catch(e) { return 'both'; }
+  }
+  function setTrack(t) {
+    try { localStorage.setItem('study-track', t); } catch(e) {}
+  }
+  function getActiveWeekdayPlan(dow) {
+    const base = WEEKDAY_PLAN[dow];
+    if (!base || base.type === 'flex') return base;
+    const track = getTrack();
+    let books = base.books.slice();
+    if (track === 'buet') {
+      // Math priority: swap bio → hmath1
+      books = books.map(b => (b === 'bio1' || b === 'bio2') ? 'hmath1' : b);
+      // dedupe
+      books = [...new Set(books)];
+    } else if (track === 'medical') {
+      // Bio priority: swap hmath → bio1
+      books = books.map(b => (b === 'hmath1') ? 'bio1' : b);
+      books = [...new Set(books)];
+    }
+    return { type: 'study', books };
+  }
+  function renderTrackRow() {
+    const t = getTrack();
+    document.querySelectorAll('.trackbtn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.track === t);
+    });
+  }
 
 
   function vocabKey(catKey) {
@@ -1101,7 +1545,7 @@ window.addEventListener('load', function() {
   const VOCAB_SRS_INTERVALS = [1, 3, 7, 16, 35, 90];
   // PCMB: chapters must survive ~2 years to admission — never fully stops,
   // keeps repeating at the longest interval so nothing silently drops off.
-  const PCMB_SRS_INTERVALS = [1, 7, 15, 30, 90]; // then repeats at 90 days forever (until exam)
+  const PCMB_SRS_INTERVALS = [1, 3, 7, 15, 30, 90]; // then repeats at 90 days
 
   function intervalsFor(domain) {
     return domain === 'pcmb' ? PCMB_SRS_INTERVALS : VOCAB_SRS_INTERVALS;
@@ -1215,6 +1659,20 @@ window.addEventListener('load', function() {
     if (idx >= book.chapters.length) return null;
     return idx;
   }
+
+  function pcmbSessionKey(dateKey, bookKey) {
+    return `pcmbsession-${dateKey}-${bookKey}`;
+  }
+  function isPcmbSessionDone(dateKey, bookKey) {
+    try { return localStorage.getItem(pcmbSessionKey(dateKey, bookKey)) === '1'; } catch(e) { return false; }
+  }
+  function setPcmbSessionDone(dateKey, bookKey, done) {
+    try {
+      if (done) localStorage.setItem(pcmbSessionKey(dateKey, bookKey), '1');
+      else localStorage.removeItem(pcmbSessionKey(dateKey, bookKey));
+    } catch(e) {}
+  }
+
   function getBookProgress(book) {
     let done = 0;
     book.chapters.forEach((c, i) => { if (isChapterDone(book.key, i)) done++; });
@@ -1307,7 +1765,7 @@ window.addEventListener('load', function() {
         <label>পৃষ্ঠা পড়েছো (পর্যন্ত):</label>
         <input type="number" inputmode="numeric" min="0" class="pagesinput" value="${currentPages || ''}" placeholder="যেমন 12">
       </div>
-      <div class="pageshint">পৃষ্ঠা লিখে ✓ চাপো → রিভিশন সিডিউল শুরু হবে (১→৭→১৫→৩০→৯০ দিন)</div>` : '';
+      <div class="pageshint">পৃষ্ঠা লিখে ✓ চাপো (আজকের পড়া)। Chapter শেষ → Subjects-এ ✓</div>` : '';
     const pagesBadge = (isRevision && isPcmb && currentPages > 0)
       ? `<span class="pagesbadge">পৃষ্ঠা ১–${currentPages}</span>` : '';
     div.innerHTML = `
@@ -1371,42 +1829,52 @@ window.addEventListener('load', function() {
   const PCMB_BOOK_KEYS = ['phy1', 'chem1', 'hmath1', 'bio1', 'bio2'];
   const OTHER_BOOK_KEYS = ['engg', 'gk', 'ict', 'bangla1', 'bangla2'];
 
+
+
   function renderPcmbFocus(weekNum, dDate) {
     const dateKey = dateKeyOf(dDate);
     const container = document.getElementById('pcmbFocusTasks');
     container.innerHTML = '';
 
-    const dow = dDate.getDay(); // 0=Sun ... 6=Sat, real calendar weekday
-    const plan = WEEKDAY_PLAN[dow];
+    const dow = dDate.getDay(); // 0=Sun ... 6=Sat
+    const plan = getActiveWeekdayPlan(dow);
+
+    function appendStudyRow(book) {
+      const nextIdx = getNextIncompleteChapter(book);
+      if (nextIdx === null) {
+        const div = document.createElement('div');
+        div.className = 'task';
+        div.innerHTML = `<span class="taskemoji">✅</span>${book.name}: সব chapter শেষ!`;
+        container.appendChild(div);
+        return;
+      }
+      // Already finished today's session for this book?
+      if (isPcmbSessionDone(dateKey, book.key)) {
+        const pages = getChapterPages(book.key, nextIdx);
+        const div = document.createElement('div');
+        div.className = 'task done';
+        div.innerHTML = `<span class="taskemoji">✅</span><b>${book.name} — ${book.chapters[nextIdx]}</b>` +
+          (pages > 0 ? ` <span class="pagesbadge">পৃষ্ঠা ১–${pages}</span>` : '') +
+          ` <span style="color:var(--ink-muted);font-size:12px;">· আজ সেভ</span>`;
+        container.appendChild(div);
+        return;
+      }
+      const row = pcmbTaskRow(book, nextIdx, STUDY_TASK_TEXT[book.subjectType], false, () => {
+        // Session only — chapter stays incomplete until Subjects checkbox
+        // (pages + SRS already saved inside pcmbTaskRow)
+        setPcmbSessionDone(dateKey, book.key, true);
+        render(currentWeek);
+      }, dateKey);
+      container.appendChild(row);
+    }
 
     if (plan.type === 'study') {
-      plan.books.forEach(bk => {
-        const book = pcmbBook(bk);
-        const nextIdx = getNextIncompleteChapter(book);
-        if (nextIdx === null) {
-          const div = document.createElement('div');
-          div.className = 'task';
-          div.innerHTML = `<span class="taskemoji">✅</span>${book.name}: সব chapter শেষ!`;
-          container.appendChild(div);
-          return;
-        }
-        const row = pcmbTaskRow(book, nextIdx, STUDY_TASK_TEXT[book.subjectType], false, () => {
-          setChapterDone(book.key, nextIdx, true);
-          setCurrentIdx(book.key, nextIdx + 1);
-          const ck = pcmbSrsCatKey(book.key, nextIdx);
-          if (!localStorage.getItem(pcmbSrsStorageKey(ck))) {
-            initPcmbSrsEntry(dateKey, ck); // only if no entry yet (don't reset page-logging progress)
-          }
-          render(currentWeek);
-        }, dateKey);
-        container.appendChild(row);
-      });
-
-    } else { // flex day (Thursday)
+      plan.books.forEach(bk => appendStudyRow(pcmbBook(bk)));
+    } else { // flex day
       const msg = document.createElement('div');
       msg.className = 'timingnote';
       msg.style.marginBottom = '10px';
-      msg.innerHTML = 'Flex Day: এই সপ্তাহের বাকি থাকা PCMB টাস্কগুলো শেষ করো!';
+      msg.innerHTML = 'Flex Day — বাকি PCMB শেষ করো। পৃষ্ঠা লিখে ✓ দাও।';
       container.appendChild(msg);
 
       let anyPending = false;
@@ -1414,16 +1882,7 @@ window.addEventListener('load', function() {
         const nextIdx = getNextIncompleteChapter(book);
         if (nextIdx === null) return;
         anyPending = true;
-        const row = pcmbTaskRow(book, nextIdx, STUDY_TASK_TEXT[book.subjectType], false, () => {
-          setChapterDone(book.key, nextIdx, true);
-          setCurrentIdx(book.key, nextIdx + 1);
-          const ck = pcmbSrsCatKey(book.key, nextIdx);
-          if (!localStorage.getItem(pcmbSrsStorageKey(ck))) {
-            initPcmbSrsEntry(dateKey, ck); // only if no entry yet (don't reset page-logging progress)
-          }
-          render(currentWeek);
-        }, dateKey);
-        container.appendChild(row);
+        appendStudyRow(book);
       });
       if (!anyPending) {
         const div = document.createElement('div');
@@ -1584,7 +2043,7 @@ window.addEventListener('load', function() {
         const roundLabel = entry.stage + 1;
         const pages = getChapterPages(entry.book.key, entry.idx);
         const pageNote = pages > 0 ? ` · <b>পৃষ্ঠা ১–${pages}</b>` : '';
-        const stageNames = ['১ম রিভিশন (১ দিন)', '২য় রিভিশন (৭ দিন)', '৩য় রিভিশন (১৫ দিন)', '৪র্থ রিভিশন (৩০ দিন)', '৫ম+ রিভিশন (৯০ দিন)'];
+        const stageNames = ['১ম (১ দিন)', '২য় (৩ দিন)', '৩য় (৭ দিন)', '৪র্থ (১৫ দিন)', '৫ম (৩০ দিন)', '৬ষ্ঠ+ (৯০ দিন)'];
         const stageName = stageNames[Math.min(entry.stage, stageNames.length - 1)];
         div.innerHTML = `<input type="checkbox" id="${domId}" ${isRealToday ? '' : 'disabled'}><label for="${domId}"><span class="taskemoji">🔁</span><b>${entry.book.name} — ${entry.name}</b>${pageNote}<br><span style="color:var(--ink-muted); font-size:12px;">${stageName}: ${PCMB_REVISION_STAGE_TEXT[stageIdx]}</span></label>`;
         if (isRealToday) {
@@ -1639,6 +2098,52 @@ window.addEventListener('load', function() {
     }
   }
 
+
+  function buildCustomSelect(options, selectedValue, onChange) {
+    // options: [{value, label, disabled?}]
+    const wrap = document.createElement('div');
+    wrap.className = 'cselect';
+    const selected = options.find(o => String(o.value) === String(selectedValue)) || options[0];
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'cselect-btn';
+    btn.innerHTML = `<span class="clabel">${selected ? selected.label : 'বাছাই করো'}</span><span class="chev">▾</span>`;
+    const menu = document.createElement('div');
+    menu.className = 'cselect-menu';
+    options.forEach(opt => {
+      const o = document.createElement('button');
+      o.type = 'button';
+      o.className = 'cselect-opt' + (String(opt.value) === String(selectedValue) ? ' selected' : '');
+      o.textContent = opt.label;
+      if (opt.disabled) o.disabled = true;
+      o.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (opt.disabled) return;
+        wrap.classList.remove('open');
+        btn.querySelector('.clabel').textContent = opt.label;
+        menu.querySelectorAll('.cselect-opt').forEach(x => x.classList.remove('selected'));
+        o.classList.add('selected');
+        onChange(opt.value);
+      });
+      menu.appendChild(o);
+    });
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      document.querySelectorAll('.cselect.open').forEach(el => {
+        if (el !== wrap) el.classList.remove('open');
+      });
+      wrap.classList.toggle('open');
+    });
+    wrap.appendChild(btn);
+    wrap.appendChild(menu);
+    return wrap;
+  }
+
+  // close custom selects on outside click
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.cselect.open').forEach(el => el.classList.remove('open'));
+  });
+
   function renderPcmbProgress(weekNum) {
     const container = document.getElementById('pcmbProgress');
     container.innerHTML = '';
@@ -1663,9 +2168,6 @@ window.addEventListener('load', function() {
         </div>`;
       }).join('');
       const curIdx = getCurrentIdx(book.key);
-      const options = book.chapters.map((chName, i) =>
-        `<option value="${i}" ${i === curIdx ? 'selected' : ''}>${i+1}. ${chName}</option>`
-      ).join('');
       card.innerHTML = `
         <div class="vocabhead">
           <div class="vocabname">${book.name}</div>
@@ -1674,15 +2176,21 @@ window.addEventListener('load', function() {
         <div class="vocabbarwrap"><div class="vocabbar" style="width:${pct}%;"></div></div>
         <div class="vocabnums"><span>${done} / ${total} chapters</span></div>
         <label class="chapterpicklabel">পরের chapter বাছাই করো:</label>
-        <select class="chapterpick" data-book="${book.key}">${options}</select>
+        <div class="chapterpick-mount" data-book="${book.key}"></div>
         <div class="chapterlist">${chapList}</div>
         <button class="resetbtn" data-book="${book.key}">Reset this book</button>
       `;
       container.appendChild(card);
-      card.querySelector('.chapterpick').addEventListener('change', (e) => {
-        setCurrentIdx(book.key, parseInt(e.target.value, 10));
+      const mount = card.querySelector('.chapterpick-mount');
+      const chapOpts = book.chapters.map((chName, i) => ({
+        value: i,
+        label: `${i + 1}. ${chName}`,
+        disabled: isChapterDone(book.key, i) && i !== curIdx
+      }));
+      mount.appendChild(buildCustomSelect(chapOpts, curIdx, (val) => {
+        setCurrentIdx(book.key, parseInt(val, 10));
         render(currentWeek);
-      });
+      }));
       wireDoubleTapReset(
         card.querySelector('.resetbtn'),
         'Reset this book',
@@ -1857,6 +2365,8 @@ window.addEventListener('load', function() {
     renderVocabTargets(weekNum);
     renderPcmbProgress(weekNum);
     renderRevisionTab();
+    renderTrackRow();
+    updateTimerStats();
 
     // ---- Day-by-day breakdown ----
     const weekStart = dateForWeek(weekNum);
@@ -1939,9 +2449,336 @@ window.addEventListener('load', function() {
     });
   });
 
+
+  // ---- Study timer ----
+  let timerSeconds = 0;
+  let timerInterval = null;
+  let timerRunning = false;
+
+  function timerKey(dateKey) { return `studyminutes-${dateKey}`; }
+  function getStudyMinutes(dateKey) {
+    try { return parseInt(localStorage.getItem(timerKey(dateKey)) || '0', 10) || 0; } catch(e) { return 0; }
+  }
+  function addStudyMinutes(dateKey, mins) {
+    if (mins <= 0) return;
+    try {
+      localStorage.setItem(timerKey(dateKey), String(getStudyMinutes(dateKey) + mins));
+    } catch(e) {}
+  }
+  function formatTimer(sec) {
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = sec % 60;
+    return [h, m, s].map(n => String(n).padStart(2, '0')).join(':');
+  }
+  function updateTimerDisplay() {
+    const el = document.getElementById('timerDisplay');
+    if (el) el.textContent = formatTimer(timerSeconds);
+  }
+  function updateTimerStats() {
+    const el = document.getElementById('timerStats');
+    if (!el) return;
+    const todayKey = dateKeyOf(today);
+    const sessionMins = timerRunning || timerSeconds > 0 ? Math.floor(timerSeconds / 60) : 0;
+    // only count unsaved session minutes once (after flush, floor is saved)
+    const pendingMins = Math.max(0, Math.floor(timerSeconds / 60) - (typeof timerSavedFloor === 'number' ? timerSavedFloor : 0));
+    const todayMins = getStudyMinutes(todayKey) + pendingMins;
+    const weekStart = dateForWeek(currentWeek);
+    let weekMins = 0;
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(weekStart);
+      d.setDate(d.getDate() + i);
+      const key = dateKeyOf(d);
+      weekMins += getStudyMinutes(key);
+      // add live session only to the real current week that contains today
+      if (key === todayKey) weekMins += pendingMins;
+    }
+    const realWeek = Math.max(1, weekNumberFor(today));
+    const weekLabel = currentWeek === realWeek ? 'এই সপ্তাহ' : `Week ${currentWeek}`;
+    el.textContent = `আজ: ${todayMins} মিনিট · ${weekLabel}: ${weekMins} মিনিট`;
+  }
+  // Better pause: accumulate seconds in a session bucket
+  let timerSavedFloor = 0; // minutes already written for current session
+  function flushTimerMinutes() {
+    const totalMins = Math.floor(timerSeconds / 60);
+    const delta = totalMins - timerSavedFloor;
+    if (delta > 0) {
+      addStudyMinutes(dateKeyOf(today), delta);
+      timerSavedFloor = totalMins;
+    }
+  }
+  // Rewire pause/reset with flush - replace by re-query after DOM
+  function wireTimerV2() {
+    const startBtn = document.getElementById('timerStart');
+    const pauseBtn = document.getElementById('timerPause');
+    const resetBtn = document.getElementById('timerReset');
+    if (!startBtn || startBtn.dataset.wired2 === '1') return;
+    startBtn.dataset.wired2 = '1';
+    // clear old if any by replacing listeners via clone
+    const s2 = startBtn.cloneNode(true);
+    const p2 = pauseBtn.cloneNode(true);
+    const r2 = resetBtn.cloneNode(true);
+    startBtn.parentNode.replaceChild(s2, startBtn);
+    pauseBtn.parentNode.replaceChild(p2, pauseBtn);
+    resetBtn.parentNode.replaceChild(r2, resetBtn);
+    s2.id = 'timerStart'; p2.id = 'timerPause'; r2.id = 'timerReset';
+    function syncTimerButtons() {
+      const s = document.getElementById('timerStart');
+      const p = document.getElementById('timerPause');
+      if (s) {
+        s.classList.toggle('running', timerRunning);
+        s.textContent = timerRunning ? 'Running…' : 'Start';
+      }
+      if (p) p.classList.toggle('is-paused', !timerRunning && timerSeconds > 0);
+    }
+    s2.addEventListener('click', () => {
+      if (timerRunning) return;
+      timerRunning = true;
+      syncTimerButtons();
+      showToast('টাইমার চালু ✓');
+      timerInterval = setInterval(() => {
+        timerSeconds++;
+        updateTimerDisplay();
+        if (timerSeconds % 60 === 0) { flushTimerMinutes(); updateTimerStats(); }
+      }, 1000);
+    });
+    p2.addEventListener('click', () => {
+      if (!timerRunning) {
+        showToast('আগে Start চাপো');
+        return;
+      }
+      timerRunning = false;
+      clearInterval(timerInterval);
+      timerInterval = null;
+      flushTimerMinutes();
+      syncTimerButtons();
+      updateTimerStats();
+      showToast('পজ · সময় সেভ হয়েছে');
+    });
+    r2.addEventListener('click', () => {
+      if (timerRunning) {
+        timerRunning = false;
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+      flushTimerMinutes();
+      timerSeconds = 0;
+      timerSavedFloor = 0;
+      syncTimerButtons();
+      updateTimerDisplay();
+      updateTimerStats();
+      showToast('টাইমার রিসেট');
+    });
+    syncTimerButtons();
+  }
+
+  // ---- Mock scores ----
+  function getMocks() {
+    try { return JSON.parse(localStorage.getItem('mock-scores') || '[]'); } catch(e) { return []; }
+  }
+  function saveMocks(arr) {
+    try { localStorage.setItem('mock-scores', JSON.stringify(arr)); } catch(e) {}
+  }
+  function renderMockList() {
+    const box = document.getElementById('mockList');
+    if (!box) return;
+    const list = getMocks().slice().reverse();
+    if (!list.length) {
+      box.innerHTML = '<p style="font-size:13px;color:var(--ink-muted);">এখনো কোনো স্কোর নেই।</p>';
+      return;
+    }
+    box.innerHTML = list.map((m, revIdx) => {
+      const realIdx = getMocks().length - 1 - revIdx;
+      return `<div class="mockitem">
+        <div class="mtop"><span class="msub">${m.subject}</span><span class="mscore">${m.score}</span></div>
+        <div class="mmeta">${m.date || ''}</div>
+        ${m.note ? `<div class="mnote">${m.note}</div>` : ''}
+        <button type="button" class="mdel" data-idx="${realIdx}">মুছো</button>
+      </div>`;
+    }).join('');
+    box.querySelectorAll('.mdel').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const arr = getMocks();
+        arr.splice(parseInt(btn.dataset.idx, 10), 1);
+        saveMocks(arr);
+        renderMockList();
+      });
+    });
+  }
+  function wireMocks() {
+    const btn = document.getElementById('mockSaveBtn');
+    if (!btn || btn.dataset.wired === '1') return;
+    btn.dataset.wired = '1';
+    const mount = document.getElementById('mockSubjectMount');
+    if (mount && !mount.dataset.wired) {
+      mount.dataset.wired = '1';
+      const subjects = ['Physics','Chemistry','Higher Math','Biology','English','Bangla','ICT','GK','BUET Mock','Medical Mock','Other'];
+      mount.appendChild(buildCustomSelect(
+        subjects.map(s => ({ value: s, label: s })),
+        'Physics',
+        (val) => { document.getElementById('mockSubject').value = val; }
+      ));
+    }
+    const dateEl = document.getElementById('mockDate');
+    if (dateEl && !dateEl.value) dateEl.value = dateKeyOf(today);
+    btn.addEventListener('click', () => {
+      const subject = document.getElementById('mockSubject').value;
+      const score = (document.getElementById('mockScore').value || '').trim();
+      const date = document.getElementById('mockDate').value || dateKeyOf(today);
+      const note = (document.getElementById('mockNote').value || '').trim();
+      if (!score) {
+        document.getElementById('mockScore').focus();
+        return;
+      }
+      const arr = getMocks();
+      arr.push({ subject, score, date, note, id: Date.now() });
+      saveMocks(arr);
+      document.getElementById('mockScore').value = '';
+      document.getElementById('mockNote').value = '';
+      renderMockList();
+      showToast('স্কোর সেভ হয়েছে ✓');
+    });
+  }
+
+  // ---- Backup ----
+  function wireBackup() {
+    const exp = document.getElementById('backupExport');
+    const imp = document.getElementById('backupImport');
+    const file = document.getElementById('backupFile');
+    if (!exp || exp.dataset.wired === '1') return;
+    exp.dataset.wired = '1';
+    exp.addEventListener('click', () => {
+      const data = {};
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k) data[k] = localStorage.getItem(k);
+      }
+      const blob = new Blob([JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), data }, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `study-tracker-backup-${dateKeyOf(today)}.json`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      showToast('Backup ডাউনলোড হয়েছে ✓');
+    });
+    imp.addEventListener('click', () => file.click());
+    file.addEventListener('change', () => {
+      const f = file.files && file.files[0];
+      if (!f) return;
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const parsed = JSON.parse(reader.result);
+          const data = parsed.data || parsed;
+          if (!data || typeof data !== 'object') throw new Error('bad');
+          const ok = await showModal({
+            icon: '⚠️',
+            title: 'Backup Import',
+            message: 'Import করলে বর্তমান progress overwrite হতে পারে। চালিয়ে যাবে?',
+            okText: 'Import করো',
+            cancelText: 'বাতিল',
+            danger: true
+          });
+          if (!ok) return;
+          Object.keys(data).forEach(k => {
+            try { localStorage.setItem(k, data[k]); } catch(e) {}
+          });
+          showToast('Import সফল — রিলোড হচ্ছে…');
+          setTimeout(() => location.reload(), 600);
+        } catch (e) {
+          showModal({
+            icon: '❌',
+            title: 'Import ব্যর্থ',
+            message: 'Backup ফাইল পড়া যায়নি। সঠিক JSON ফাইল দাও।',
+            okText: 'বুঝেছি',
+            showCancel: false
+          });
+        }
+      };
+      reader.readAsText(f);
+      file.value = '';
+    });
+  }
+
+
+
+  // ---- Premium modal + toast ----
+  function showToast(text, ms) {
+    const wrap = document.getElementById('appToast');
+    const txt = document.getElementById('toastText');
+    if (!wrap || !txt) return;
+    txt.textContent = text;
+    wrap.classList.add('show');
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => wrap.classList.remove('show'), ms || 2200);
+  }
+
+  function showModal(opts) {
+    return new Promise((resolve) => {
+      const overlay = document.getElementById('appModal');
+      const title = document.getElementById('modalTitle');
+      const msg = document.getElementById('modalMsg');
+      const icon = document.getElementById('modalIcon');
+      const okBtn = document.getElementById('modalOk');
+      const cancelBtn = document.getElementById('modalCancel');
+      if (!overlay) { resolve(false); return; }
+
+      title.textContent = opts.title || '';
+      msg.textContent = opts.message || '';
+      icon.textContent = opts.icon || '💬';
+      okBtn.textContent = opts.okText || 'ঠিক আছে';
+      cancelBtn.textContent = opts.cancelText || 'না';
+      cancelBtn.style.display = opts.showCancel === false ? 'none' : '';
+      okBtn.className = opts.danger ? 'modal-btn-danger' : 'modal-btn-ok';
+
+      const close = (val) => {
+        overlay.classList.remove('open');
+        okBtn.onclick = null;
+        cancelBtn.onclick = null;
+        overlay.onclick = null;
+        resolve(val);
+      };
+      okBtn.onclick = () => close(true);
+      cancelBtn.onclick = () => close(false);
+      overlay.onclick = (e) => { if (e.target === overlay) close(false); };
+      overlay.classList.add('open');
+    });
+  }
+
+  // Track buttons
+  document.querySelectorAll('.trackbtn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      setTrack(btn.dataset.track);
+      renderTrackRow();
+      render(currentWeek);
+    });
+  });
+
+  wireTimerV2();
+  wireMocks();
+  wireBackup();
+  renderTrackRow();
+  updateTimerDisplay();
+  renderMockList();
+
   render(currentWeek);
+  updateTimerStats();
 })();
 </script>
+
+
+<div class="modal-overlay" id="appModal" role="dialog" aria-modal="true">
+  <div class="modal-card">
+    <div class="modal-icon" id="modalIcon">💬</div>
+    <h3 class="modal-title" id="modalTitle">Title</h3>
+    <p class="modal-msg" id="modalMsg">Message</p>
+    <div class="modal-actions">
+      <button type="button" class="modal-btn-cancel" id="modalCancel">না</button>
+      <button type="button" class="modal-btn-ok" id="modalOk">ঠিক আছে</button>
+    </div>
+  </div>
+</div>
+<div class="toast-wrap" id="appToast"><div class="toast" id="toastText"></div></div>
 
 </body>
 </html>
