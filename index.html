@@ -302,25 +302,43 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-top: 8px;
+    margin-top: 10px;
+    flex-wrap: wrap;
   }
   .pagesrow label {
     font-size: 11.5px;
     color: var(--ink-muted);
     white-space: nowrap;
+    font-weight: 600;
   }
   .pagesinput {
-    width: 60px;
-    padding: 6px 8px;
-    border-radius: 8px;
-    border: 1px solid var(--line);
+    width: 64px;
+    padding: 7px 8px;
+    border-radius: 10px;
+    border: 1.5px solid var(--line);
     background: var(--bg);
     color: var(--ink);
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 700;
     text-align: center;
   }
   .pagesinput:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+  .pageshint {
+    font-size: 11px;
+    color: var(--ink-muted);
+    margin-top: 4px;
+    line-height: 1.4;
+  }
+  .pagesbadge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent);
+    background: var(--accent-soft);
+    padding: 3px 8px;
+    border-radius: 10px;
+    margin-left: 6px;
+  }
 
   .chaptertask {
     display: flex;
@@ -744,7 +762,7 @@
       <p class="grouptitle" style="margin-top:4px;">THIS WEEK, DAY BY DAY</p>
       <div class="daystrip" id="dayStrip"></div>
 
-      <p class="grouptitle">TODAY'S CHAPTER — PCMB</p>
+      <p class="grouptitle">TODAY'S CHAPTER — PCMB <span style="font-weight:500;text-transform:none;font-size:11px;color:var(--ink-muted);">(পৃষ্ঠা লিখে ✓ দাও)</span></p>
       <div class="daycard">
         <div id="pcmbFocusTasks"></div>
       </div>
@@ -771,7 +789,7 @@
     <!-- SUBJECTS -->
     <section class="screen" id="screen-subjects">
       <h2 class="screentitle">Subjects</h2>
-      <p class="screensub">Chapter-by-chapter progress, revision built in.</p>
+      <p class="screensub">প্রতি অধ্যায়ে পৃষ্ঠা লিখো + ✓ চাপো → রিভিশন অটো সিডিউল হবে (১→৭→১৫→৩০→৯০ দিন)।</p>
 
       <button id="resetAllBtn" class="resetallbtn">সব বই Reset করো</button>
       <div id="pcmbProgress"></div>
@@ -1283,16 +1301,20 @@ window.addEventListener('load', function() {
     const div = document.createElement('div');
     div.className = 'chaptertask';
     const currentPages = getChapterPages(book.key, chIdx);
-    const pagesInputHtml = (!isRevision && PCMB_BOOK_KEYS.includes(book.key)) ? `
+    const isPcmb = PCMB_BOOK_KEYS.includes(book.key);
+    const pagesInputHtml = (!isRevision && isPcmb) ? `
       <div class="pagesrow">
-        <label>আজ পর্যন্ত পড়া পৃষ্ঠা:</label>
-        <input type="number" inputmode="numeric" min="0" class="pagesinput" value="${currentPages || ''}" placeholder="0">
-      </div>` : '';
+        <label>পৃষ্ঠা পড়েছো (পর্যন্ত):</label>
+        <input type="number" inputmode="numeric" min="0" class="pagesinput" value="${currentPages || ''}" placeholder="যেমন 12">
+      </div>
+      <div class="pageshint">পৃষ্ঠা লিখে ✓ চাপো → রিভিশন সিডিউল শুরু হবে (১→৭→১৫→৩০→৯০ দিন)</div>` : '';
+    const pagesBadge = (isRevision && isPcmb && currentPages > 0)
+      ? `<span class="pagesbadge">পৃষ্ঠা ১–${currentPages}</span>` : '';
     div.innerHTML = `
       <div class="chaptertaskinfo">
         <span class="taskemoji">${isRevision ? '🔁' : '📖'}</span>
         <div style="flex:1;">
-          <div class="chaptertaskname">${book.name} — ${book.chapters[chIdx]}</div>
+          <div class="chaptertaskname">${book.name} — ${book.chapters[chIdx]}${pagesBadge}</div>
           <div class="chaptertasktext">${taskText}</div>
           ${pagesInputHtml}
         </div>
@@ -1304,22 +1326,41 @@ window.addEventListener('load', function() {
     if (!isRevision) {
       const pInput = div.querySelector('.pagesinput');
       if (pInput) {
-        pInput.addEventListener('change', () => {
+        const savePages = () => {
           const val = parseInt(pInput.value, 10);
-          const finalVal = isNaN(val) ? 0 : val;
+          const finalVal = isNaN(val) ? 0 : Math.max(0, val);
           setChapterPages(book.key, chIdx, finalVal);
+          // First time pages are logged → start revision cycle from today
           const catKey = pcmbSrsCatKey(book.key, chIdx);
-          const hasEntry = localStorage.getItem(pcmbSrsStorageKey(catKey));
-          if (finalVal > 0 && !hasEntry) {
-            initPcmbSrsEntry(dateKey, catKey); // first pages logged — revision cycle starts now
+          if (finalVal > 0 && !localStorage.getItem(pcmbSrsStorageKey(catKey))) {
+            initPcmbSrsEntry(dateKey, catKey);
           }
-          render(currentWeek);
-        });
+        };
+        pInput.addEventListener('change', savePages);
+        pInput.addEventListener('blur', savePages);
       }
     }
     const btn = div.querySelector('.completebtn');
     btn.addEventListener('click', () => {
       if (btn.disabled) return;
+      // For PCMB: require at least 1 page before marking complete
+      if (!isRevision && isPcmb) {
+        const pInput = div.querySelector('.pagesinput');
+        const pages = pInput ? parseInt(pInput.value, 10) : getChapterPages(book.key, chIdx);
+        if (!pages || pages < 1) {
+          if (pInput) {
+            pInput.focus();
+            pInput.style.borderColor = '#B23A3A';
+            setTimeout(() => { pInput.style.borderColor = ''; }, 1500);
+          }
+          return; // must enter pages first
+        }
+        setChapterPages(book.key, chIdx, pages);
+        const catKey = pcmbSrsCatKey(book.key, chIdx);
+        if (!localStorage.getItem(pcmbSrsStorageKey(catKey))) {
+          initPcmbSrsEntry(dateKey, catKey);
+        }
+      }
       btn.disabled = true;
       div.classList.add('completing');
       setTimeout(() => { onComplete(); }, 480);
@@ -1542,8 +1583,10 @@ window.addEventListener('load', function() {
         const stageIdx = Math.min(entry.stage, PCMB_REVISION_STAGE_TEXT.length - 1);
         const roundLabel = entry.stage + 1;
         const pages = getChapterPages(entry.book.key, entry.idx);
-        const pageNote = pages > 0 ? ` <b>(পৃষ্ঠা ১–${pages} পর্যন্ত)</b>` : '';
-        div.innerHTML = `<input type="checkbox" id="${domId}" ${isRealToday ? '' : 'disabled'}><label for="${domId}"><span class="taskemoji">🔁</span><b>${entry.book.name} — ${entry.name}</b> <span style="color:var(--ink-muted); font-size:11px;">(${roundLabel} বার)</span>: ${PCMB_REVISION_STAGE_TEXT[stageIdx]}${pageNote}</label>`;
+        const pageNote = pages > 0 ? ` · <b>পৃষ্ঠা ১–${pages}</b>` : '';
+        const stageNames = ['১ম রিভিশন (১ দিন)', '২য় রিভিশন (৭ দিন)', '৩য় রিভিশন (১৫ দিন)', '৪র্থ রিভিশন (৩০ দিন)', '৫ম+ রিভিশন (৯০ দিন)'];
+        const stageName = stageNames[Math.min(entry.stage, stageNames.length - 1)];
+        div.innerHTML = `<input type="checkbox" id="${domId}" ${isRealToday ? '' : 'disabled'}><label for="${domId}"><span class="taskemoji">🔁</span><b>${entry.book.name} — ${entry.name}</b>${pageNote}<br><span style="color:var(--ink-muted); font-size:12px;">${stageName}: ${PCMB_REVISION_STAGE_TEXT[stageIdx]}</span></label>`;
         if (isRealToday) {
           div.querySelector('input').addEventListener('change', (e) => {
             if (e.target.checked) advancePcmbSrsEntry(entry.catKey);
@@ -1611,7 +1654,7 @@ window.addEventListener('load', function() {
         const isDone = isChapterDone(book.key, i);
         const pages = getChapterPages(book.key, i);
         const pagesHtml = isPcmbBook
-          ? `<input type="number" inputmode="numeric" class="pagesinput" data-book="${book.key}" data-idx="${i}" value="${pages || ''}" placeholder="পৃষ্ঠা" min="0">`
+          ? `<input type="number" inputmode="numeric" class="pagesinput" data-book="${book.key}" data-idx="${i}" value="${pages || ''}" placeholder="পৃঃ" min="0" title="কত পৃষ্ঠা পর্যন্ত পড়েছো">`
           : '';
         return `<div class="task${isDone ? ' done' : ''}">
           <input type="checkbox" id="${cid}" ${isDone ? 'checked' : ''}>
