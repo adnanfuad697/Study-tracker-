@@ -1060,6 +1060,38 @@
   .daypill:active {
     transform: scale(0.96);
   }
+
+  .multich-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 8px 0 4px;
+    flex-wrap: wrap;
+  }
+  .multich-bar .addch-btn {
+    padding: 8px 12px;
+    border-radius: 10px;
+    border: 1.5px dashed var(--line);
+    background: var(--bg);
+    color: var(--accent);
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .multich-bar .addch-btn:active { transform: scale(0.97); }
+  .multich-pick {
+    margin-top: 6px;
+    margin-bottom: 8px;
+  }
+  .bookblock-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin: 12px 0 6px;
+  }
+  .bookblock-label:first-child { margin-top: 0; }
 </style>
 </head>
 <body>
@@ -1660,17 +1692,46 @@ window.addEventListener('load', function() {
     return idx;
   }
 
-  function pcmbSessionKey(dateKey, bookKey) {
-    return `pcmbsession-${dateKey}-${bookKey}`;
+  function pcmbSessionKey(dateKey, bookKey, chIdx) {
+    // per chapter so multiple chapters of same book can be logged same day
+    if (chIdx === undefined || chIdx === null) return `pcmbsession-${dateKey}-${bookKey}`;
+    return `pcmbsession-${dateKey}-${bookKey}-${chIdx}`;
   }
-  function isPcmbSessionDone(dateKey, bookKey) {
-    try { return localStorage.getItem(pcmbSessionKey(dateKey, bookKey)) === '1'; } catch(e) { return false; }
-  }
-  function setPcmbSessionDone(dateKey, bookKey, done) {
+  function isPcmbSessionDone(dateKey, bookKey, chIdx) {
     try {
-      if (done) localStorage.setItem(pcmbSessionKey(dateKey, bookKey), '1');
-      else localStorage.removeItem(pcmbSessionKey(dateKey, bookKey));
+      if (localStorage.getItem(pcmbSessionKey(dateKey, bookKey, chIdx)) === '1') return true;
+      // legacy per-book key
+      if (chIdx !== undefined && localStorage.getItem(pcmbSessionKey(dateKey, bookKey)) === '1') return false;
+      return false;
+    } catch(e) { return false; }
+  }
+  function setPcmbSessionDone(dateKey, bookKey, chIdx, done) {
+    try {
+      const k = pcmbSessionKey(dateKey, bookKey, chIdx);
+      if (done) localStorage.setItem(k, '1');
+      else localStorage.removeItem(k);
     } catch(e) {}
+  }
+  // Extra chapters user added for multi-progress (same book, same day)
+  function multiChKey(dateKey, bookKey) {
+    return `pcmbmulti-${dateKey}-${bookKey}`;
+  }
+  function getMultiChapters(dateKey, bookKey) {
+    try {
+      const raw = localStorage.getItem(multiChKey(dateKey, bookKey));
+      const arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr.map(n => parseInt(n, 10)).filter(n => !isNaN(n)) : [];
+    } catch(e) { return []; }
+  }
+  function setMultiChapters(dateKey, bookKey, idxs) {
+    try {
+      localStorage.setItem(multiChKey(dateKey, bookKey), JSON.stringify([...new Set(idxs)]));
+    } catch(e) {}
+  }
+  function addMultiChapter(dateKey, bookKey, idx) {
+    const arr = getMultiChapters(dateKey, bookKey);
+    if (!arr.includes(idx)) arr.push(idx);
+    setMultiChapters(dateKey, bookKey, arr);
   }
 
   function getBookProgress(book) {
@@ -1836,53 +1897,120 @@ window.addEventListener('load', function() {
     const container = document.getElementById('pcmbFocusTasks');
     container.innerHTML = '';
 
-    const dow = dDate.getDay(); // 0=Sun ... 6=Sat
+    const dow = dDate.getDay();
     const plan = getActiveWeekdayPlan(dow);
 
-    function appendStudyRow(book) {
+    function chaptersToShow(book) {
       const nextIdx = getNextIncompleteChapter(book);
-      if (nextIdx === null) {
+      const multi = getMultiChapters(dateKey, book.key);
+      const set = new Set();
+      if (nextIdx !== null) set.add(nextIdx);
+      multi.forEach(i => {
+        if (i >= 0 && i < book.chapters.length && !isChapterDone(book.key, i)) set.add(i);
+      });
+      // also any incomplete chapter that already has pages (in-progress)
+      book.chapters.forEach((_, i) => {
+        if (!isChapterDone(book.key, i) && getChapterPages(book.key, i) > 0) set.add(i);
+      });
+      return [...set].sort((a, b) => a - b);
+    }
+
+    function appendChapterRow(book, chIdx) {
+      if (isPcmbSessionDone(dateKey, book.key, chIdx)) {
+        const pages = getChapterPages(book.key, chIdx);
+        const div = document.createElement('div');
+        div.className = 'task done';
+        div.innerHTML = `<span class="taskemoji">✅</span><b>${book.name} — ${book.chapters[chIdx]}</b>` +
+          (pages > 0 ? ` <span class="pagesbadge">পৃষ্ঠা ১–${pages}</span>` : '') +
+          ` <span style="color:var(--ink-muted);font-size:12px;">· আজ সেভ</span>`;
+        container.appendChild(div);
+        return;
+      }
+      const row = pcmbTaskRow(book, chIdx, STUDY_TASK_TEXT[book.subjectType], false, () => {
+        setPcmbSessionDone(dateKey, book.key, chIdx, true);
+        render(currentWeek);
+      }, dateKey);
+      container.appendChild(row);
+    }
+
+    function appendAddMore(book) {
+      const shown = new Set(chaptersToShow(book));
+      const available = book.chapters
+        .map((name, i) => ({ i, name }))
+        .filter(x => !isChapterDone(book.key, x.i) && !shown.has(x.i));
+      if (!available.length) return;
+
+      const bar = document.createElement('div');
+      bar.className = 'multich-bar';
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'addch-btn';
+      btn.textContent = `+ ${book.name} — আরও chapter`;
+      bar.appendChild(btn);
+      container.appendChild(bar);
+
+      const pickWrap = document.createElement('div');
+      pickWrap.className = 'multich-pick';
+      pickWrap.style.display = 'none';
+      container.appendChild(pickWrap);
+
+      btn.addEventListener('click', () => {
+        if (pickWrap.style.display === 'none') {
+          pickWrap.style.display = 'block';
+          pickWrap.innerHTML = '';
+          const opts = available.map(x => ({
+            value: x.i,
+            label: `${x.i + 1}. ${x.name}`
+          }));
+          pickWrap.appendChild(buildCustomSelect(opts, opts[0].value, (val) => {
+            addMultiChapter(dateKey, book.key, parseInt(val, 10));
+            showToast('Chapter যোগ হয়েছে');
+            render(currentWeek);
+          }));
+        } else {
+          pickWrap.style.display = 'none';
+        }
+      });
+    }
+
+    function appendBookBlock(book) {
+      const idxs = chaptersToShow(book);
+      if (idxs.length === 0) {
         const div = document.createElement('div');
         div.className = 'task';
         div.innerHTML = `<span class="taskemoji">✅</span>${book.name}: সব chapter শেষ!`;
         container.appendChild(div);
         return;
       }
-      // Already finished today's session for this book?
-      if (isPcmbSessionDone(dateKey, book.key)) {
-        const pages = getChapterPages(book.key, nextIdx);
-        const div = document.createElement('div');
-        div.className = 'task done';
-        div.innerHTML = `<span class="taskemoji">✅</span><b>${book.name} — ${book.chapters[nextIdx]}</b>` +
-          (pages > 0 ? ` <span class="pagesbadge">পৃষ্ঠা ১–${pages}</span>` : '') +
-          ` <span style="color:var(--ink-muted);font-size:12px;">· আজ সেভ</span>`;
-        container.appendChild(div);
-        return;
+      if (idxs.length > 1 || getMultiChapters(dateKey, book.key).length) {
+        const lab = document.createElement('div');
+        lab.className = 'bookblock-label';
+        lab.textContent = book.name + ' — একাধিক chapter';
+        container.appendChild(lab);
       }
-      const row = pcmbTaskRow(book, nextIdx, STUDY_TASK_TEXT[book.subjectType], false, () => {
-        // Session only — chapter stays incomplete until Subjects checkbox
-        // (pages + SRS already saved inside pcmbTaskRow)
-        setPcmbSessionDone(dateKey, book.key, true);
-        render(currentWeek);
-      }, dateKey);
-      container.appendChild(row);
+      idxs.forEach(i => appendChapterRow(book, i));
+      appendAddMore(book);
     }
 
     if (plan.type === 'study') {
-      plan.books.forEach(bk => appendStudyRow(pcmbBook(bk)));
-    } else { // flex day
+      plan.books.forEach(bk => appendBookBlock(pcmbBook(bk)));
+    } else {
       const msg = document.createElement('div');
       msg.className = 'timingnote';
       msg.style.marginBottom = '10px';
-      msg.innerHTML = 'Flex Day — বাকি PCMB শেষ করো। পৃষ্ঠা লিখে ✓ দাও।';
+      msg.innerHTML = 'Flex Day — বাকি PCMB শেষ করো। একই বইয়ের একাধিক chapter যোগ করতে "+ আরও chapter" চাপো।';
       container.appendChild(msg);
 
       let anyPending = false;
       PCMB_BOOK_KEYS.map(pcmbBook).forEach(book => {
-        const nextIdx = getNextIncompleteChapter(book);
-        if (nextIdx === null) return;
+        if (getNextIncompleteChapter(book) === null && getMultiChapters(dateKey, book.key).length === 0) {
+          // still show if in-progress pages
+          const hasProg = book.chapters.some((_, i) => !isChapterDone(book.key, i) && getChapterPages(book.key, i) > 0);
+          if (!hasProg) return;
+        }
+        if (getNextIncompleteChapter(book) === null && !book.chapters.some((_, i) => !isChapterDone(book.key, i))) return;
         anyPending = true;
-        appendStudyRow(book);
+        appendBookBlock(book);
       });
       if (!anyPending) {
         const div = document.createElement('div');
