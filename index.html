@@ -2199,34 +2199,39 @@ window.addEventListener('load', function() {
     setMultiChapters(dateKey, bookKey, arr);
   }
   function getWeekSubjectCounts(weekNum) {
+    // Count only when that day's study is actually done (pages + ✓ session)
     const counts = {};
     DAY_PLAN_SUBJECTS.forEach(s => { counts[s.key] = 0; });
     const weekStart = dateForWeek(weekNum);
     const todayKey = dateKeyOf(today);
     const realWeek = Math.max(1, weekNumberFor(today));
-    // Count starts from today when viewing the real current week (fresh reset)
     for (let i = 0; i < 7; i++) {
       const d = new Date(weekStart);
       d.setDate(d.getDate() + i);
       const key = dateKeyOf(d);
-      if (weekNum === realWeek && key < todayKey) continue; // past days this week don't count
-      const dow = d.getDay();
-      // Prefer assignments (actual planned chapters); else subject chips
-      const assigns = getDayAssignments(key);
-      if (assigns.length) {
-        const seen = new Set();
-        assigns.forEach(a => {
-          if (counts[a.bookKey] !== undefined && !seen.has(a.bookKey)) {
-            counts[a.bookKey]++;
-            seen.add(a.bookKey);
-          }
-        });
-      } else {
-        const books = getCustomDayPlan(key, dow);
-        books.forEach(bk => {
-          if (counts[bk] !== undefined) counts[bk]++;
-        });
-      }
+      if (weekNum === realWeek && key < todayKey) continue;
+      const doneBooks = new Set();
+      // 1) Assignments: count book if that chapter session is done that day
+      getDayAssignments(key).forEach(a => {
+        if (counts[a.bookKey] === undefined) return;
+        if (isPcmbSessionDone(key, a.bookKey, a.chIdx)) doneBooks.add(a.bookKey);
+      });
+      // 2) Also scan localStorage sessions for this date (any chapter ticked)
+      try {
+        const prefix = `pcmbsession-${key}-`;
+        for (let j = 0; j < localStorage.length; j++) {
+          const k = localStorage.key(j);
+          if (!k || !k.startsWith(prefix) || localStorage.getItem(k) !== '1') continue;
+          // pcmbsession-DATE-bookKey-chIdx
+          const rest = k.slice(prefix.length);
+          const parts = rest.split('-');
+          if (parts.length < 1) continue;
+          // book keys are like phy1, chem1, hmath1, bio1, bio2 (no extra hyphens)
+          const bookKey = parts[0];
+          if (counts[bookKey] !== undefined) doneBooks.add(bookKey);
+        }
+      } catch(e) {}
+      doneBooks.forEach(bk => { counts[bk]++; });
     }
     return counts;
   }
@@ -2240,7 +2245,7 @@ window.addEventListener('load', function() {
     const title = document.querySelector('#weekBalance .wbtitle');
     if (title) {
       title.textContent = weekNum === realWeek
-        ? 'এই সপ্তাহে subject (আজ থেকে count)'
+        ? 'এই সপ্তাহে subject (শুধু ✓ দিলে count)'
         : `Week ${weekNum} — subject কয়বার`;
     }
     row.innerHTML = '';
