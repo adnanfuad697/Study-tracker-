@@ -1167,6 +1167,60 @@
     margin-top: 8px;
     line-height: 1.4;
   }
+
+  .weekbal {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+  }
+  .weekbal .wbtitle {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 8px;
+  }
+  .weekbal-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .weekbal-item {
+    font-size: 12px;
+    font-weight: 700;
+    padding: 5px 10px;
+    border-radius: 10px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    color: var(--ink);
+  }
+  .weekbal-item.zero { color: var(--ink-muted); opacity: 0.7; }
+  .weekbal-item.hot {
+    border-color: #B23A3A;
+    color: #B23A3A;
+    background: rgba(178,58,58,0.08);
+  }
+  .weekbal-item.ok {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-soft);
+  }
+  .ch-remove {
+    margin-left: 6px;
+    border: none;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    color: var(--ink-muted);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .ch-remove:active { opacity: 0.8; }
 </style>
 </head>
 <body>
@@ -1249,6 +1303,10 @@
       <div class="daystrip" id="dayStrip"></div>
 
       <p class="grouptitle">TODAY'S CHAPTER — PCMB</p>
+      <div class="weekbal" id="weekBalance">
+        <div class="wbtitle">এই সপ্তাহে subject কয়বার বাছাই</div>
+        <div class="weekbal-row" id="weekBalanceRow"></div>
+      </div>
       <div class="dayplan-box">
         <div class="dplabel">আজকের subject বাছাই করো (Private / Udvash অনুযায়ী)</div>
         <div class="dayplan-chips" id="dayPlanChips"></div>
@@ -1869,6 +1927,41 @@ window.addEventListener('load', function() {
     if (!arr.includes(idx)) arr.push(idx);
     setMultiChapters(dateKey, bookKey, arr);
   }
+  function removeMultiChapter(dateKey, bookKey, idx) {
+    const arr = getMultiChapters(dateKey, bookKey).filter(i => i !== idx);
+    setMultiChapters(dateKey, bookKey, arr);
+  }
+  function getWeekSubjectCounts(weekNum) {
+    const counts = {};
+    DAY_PLAN_SUBJECTS.forEach(s => { counts[s.key] = 0; });
+    const weekStart = dateForWeek(weekNum);
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(weekStart);
+      d.setDate(d.getDate() + i);
+      const key = dateKeyOf(d);
+      const dow = d.getDay();
+      const books = getCustomDayPlan(key, dow);
+      books.forEach(bk => {
+        if (counts[bk] !== undefined) counts[bk]++;
+      });
+    }
+    return counts;
+  }
+  function renderWeekBalance(weekNum) {
+    const row = document.getElementById('weekBalanceRow');
+    if (!row) return;
+    const counts = getWeekSubjectCounts(weekNum);
+    const vals = Object.values(counts);
+    const max = Math.max(0, ...vals);
+    row.innerHTML = '';
+    DAY_PLAN_SUBJECTS.forEach(s => {
+      const n = counts[s.key] || 0;
+      const span = document.createElement('span');
+      span.className = 'weekbal-item' + (n === 0 ? ' zero' : (max >= 4 && n === max ? ' hot' : (n > 0 ? ' ok' : '')));
+      span.textContent = `${s.label}: ${n}×`;
+      row.appendChild(span);
+    });
+  }
 
   function getBookProgress(book) {
     let done = 0;
@@ -2048,6 +2141,7 @@ window.addEventListener('load', function() {
     const plan = { type: 'study', books: customBooks };
 
     function chaptersToShow(book) {
+      // Default: only 1 chapter (next incomplete). Extra only if user added via "+ chapter".
       const nextIdx = getNextIncompleteChapter(book);
       const multi = getMultiChapters(dateKey, book.key);
       const set = new Set();
@@ -2055,14 +2149,12 @@ window.addEventListener('load', function() {
       multi.forEach(i => {
         if (i >= 0 && i < book.chapters.length && !isChapterDone(book.key, i)) set.add(i);
       });
-      // also any incomplete chapter that already has pages (in-progress)
-      book.chapters.forEach((_, i) => {
-        if (!isChapterDone(book.key, i) && getChapterPages(book.key, i) > 0) set.add(i);
-      });
       return [...set].sort((a, b) => a - b);
     }
 
     function appendChapterRow(book, chIdx) {
+      const nextIdx = getNextIncompleteChapter(book);
+      const isExtra = chIdx !== nextIdx;
       if (isPcmbSessionDone(dateKey, book.key, chIdx)) {
         const pages = getChapterPages(book.key, chIdx);
         const div = document.createElement('div');
@@ -2070,6 +2162,17 @@ window.addEventListener('load', function() {
         div.innerHTML = `<span class="taskemoji">✅</span><b>${book.name} — ${book.chapters[chIdx]}</b>` +
           (pages > 0 ? ` <span class="pagesbadge">পৃষ্ঠা ১–${pages}</span>` : '') +
           ` <span style="color:var(--ink-muted);font-size:12px;">· আজ সেভ</span>`;
+        if (isExtra) {
+          const rm = document.createElement('button');
+          rm.type = 'button';
+          rm.className = 'ch-remove';
+          rm.textContent = 'সরান';
+          rm.addEventListener('click', () => {
+            removeMultiChapter(dateKey, book.key, chIdx);
+            render(currentWeek);
+          });
+          div.appendChild(rm);
+        }
         container.appendChild(div);
         return;
       }
@@ -2077,6 +2180,19 @@ window.addEventListener('load', function() {
         setPcmbSessionDone(dateKey, book.key, chIdx, true);
         render(currentWeek);
       }, dateKey);
+      if (isExtra) {
+        const rm = document.createElement('button');
+        rm.type = 'button';
+        rm.className = 'ch-remove';
+        rm.textContent = 'সরান';
+        rm.title = 'আজকের লিস্ট থেকে সরান (১টা chapter রাখতে)';
+        rm.addEventListener('click', () => {
+          removeMultiChapter(dateKey, book.key, chIdx);
+          showToast('অতিরিক্ত chapter সরানো হয়েছে');
+          render(currentWeek);
+        });
+        row.appendChild(rm);
+      }
       container.appendChild(row);
     }
 
@@ -2616,6 +2732,7 @@ window.addEventListener('load', function() {
     renderRevisionTab();
     renderTrackRow();
     updateTimerStats();
+    renderWeekBalance(weekNum);
 
     // ---- Day-by-day breakdown ----
     const weekStart = dateForWeek(weekNum);
