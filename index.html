@@ -1363,6 +1363,11 @@
 
       <div class="phasecard" id="phaseCard"></div>
 
+      <div class="rev-home-alert" id="revHomeAlert">
+        <div class="rha-num" id="revHomeNum">0</div>
+        <div class="rha-text">আজ <span id="revHomeCount">0</span>টা রিভিশন বাকি — Revision ট্যাবে যাও</div>
+      </div>
+
       <p class="grouptitle">TRACK — BUET / MEDICAL</p>
       <div class="trackrow" id="trackRow">
         <button type="button" class="trackbtn" data-track="both">Both</button>
@@ -1524,6 +1529,7 @@
     </button>
     <button class="tabbtn" data-screen="revision" aria-label="Revision">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12a9 9 0 1 1 2.6 6.35"/><path d="M3 21v-5h5"/></svg>
+      <span class="tab-badge" id="revTabBadge">0</span>
       Revision
     </button>
     <button class="tabbtn" data-screen="language" aria-label="Vocabulary">
@@ -2591,6 +2597,46 @@ window.addEventListener('load', function() {
 
   let revisionDayOffset = 0;
 
+
+  function countDueRevisionsToday() {
+    const todayKey = dateKeyOf(today);
+    let n = 0;
+    try {
+      n += getAllDuePcmbEntries(todayKey).length;
+    } catch(e) {}
+    try {
+      vocabCategories.forEach(cat => {
+        n += getDueEntries(cat.key, todayKey).length;
+      });
+    } catch(e) {}
+    return n;
+  }
+
+  function updateRevisionBadges() {
+    const n = countDueRevisionsToday();
+    const badge = document.getElementById('revTabBadge');
+    if (badge) {
+      if (n > 0) {
+        badge.textContent = n > 99 ? '99+' : String(n);
+        badge.classList.add('show');
+      } else {
+        badge.classList.remove('show');
+      }
+    }
+    const alert = document.getElementById('revHomeAlert');
+    const num = document.getElementById('revHomeNum');
+    const cnt = document.getElementById('revHomeCount');
+    if (alert && num && cnt) {
+      if (n > 0) {
+        num.textContent = n > 99 ? '99+' : String(n);
+        cnt.textContent = String(n);
+        alert.classList.add('show');
+      } else {
+        alert.classList.remove('show');
+      }
+    }
+  }
+
   function renderRevisionTab() {
     const viewDate = new Date(today);
     viewDate.setDate(viewDate.getDate() + revisionDayOffset);
@@ -2956,6 +3002,7 @@ window.addEventListener('load', function() {
     renderVocabTargets(weekNum);
     renderPcmbProgress(weekNum);
     renderRevisionTab();
+    updateRevisionBadges();
     renderTrackRow();
     updateTimerStats();
     renderWeekBalance(weekNum);
@@ -3354,6 +3401,16 @@ window.addEventListener('load', function() {
       render(currentWeek);
     });
   });
+
+
+  const revHomeAlert = document.getElementById('revHomeAlert');
+  if (revHomeAlert && !revHomeAlert.dataset.wired) {
+    revHomeAlert.dataset.wired = '1';
+    revHomeAlert.addEventListener('click', () => {
+      const btn = document.querySelector('.tabbtn[data-screen="revision"]');
+      if (btn) btn.click();
+    });
+  }
 
   wireAssignPlanner();
   wireTimerV2();
