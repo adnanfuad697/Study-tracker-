@@ -1911,15 +1911,22 @@ window.addEventListener('load', function() {
       label: `${i + 1}. ${name}${isChapterDone(bookKey, i) ? ' ✓' : ''}`
     }));
     let selected = getCurrentIdx(bookKey);
-    if (selected >= book.chapters.length) selected = 0;
-    document.getElementById('logChapter').value = String(selected);
-    const pages = getChapterPages(bookKey, selected);
-    const pe = document.getElementById('logPages');
-    if (pe) pe.value = pages > 0 ? pages : '';
+    if (isNaN(selected) || selected < 0 || selected >= book.chapters.length) selected = 0;
+    const chEl = document.getElementById('logChapter');
+    if (chEl) chEl.value = String(selected);
+    const pe = document.getElementById('logProgress');
+    if (pe) {
+      const note = getChapterNote(bookKey, selected);
+      const pg = getChapterPages(bookKey, selected);
+      pe.value = note || (pg > 0 && pg < 999 ? ('পৃষ্ঠা ' + pg) : (pg >= 999 ? 'সব শেষ' : ''));
+    }
     mount.appendChild(buildCustomSelect(opts, selected, (val) => {
-      document.getElementById('logChapter').value = String(val);
-      const p2 = getChapterPages(bookKey, parseInt(val, 10));
-      if (pe) pe.value = p2 > 0 ? p2 : '';
+      if (chEl) chEl.value = String(val);
+      if (pe) {
+        const note = getChapterNote(bookKey, parseInt(val, 10));
+        const pg = getChapterPages(bookKey, parseInt(val, 10));
+        pe.value = note || (pg > 0 && pg < 999 ? ('পৃষ্ঠা ' + pg) : (pg >= 999 ? 'সব শেষ' : ''));
+      }
     }));
   }
 
@@ -1927,51 +1934,89 @@ window.addEventListener('load', function() {
     const bookHidden = document.getElementById('logBook');
     const bookMount = document.getElementById('logBookMount');
     const saveBtn = document.getElementById('logSaveBtn');
-    if (!saveBtn || saveBtn.dataset.wired === '1') return;
+    if (!saveBtn) return;
+
+    // Always (re)bind chips — works even if re-rendered
+    document.querySelectorAll('#logProgChips .prog-chip').forEach(chip => {
+      if (chip.dataset.wired === '1') return;
+      chip.dataset.wired = '1';
+      chip.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const pe = document.getElementById('logProgress');
+        if (!pe) return;
+        const v = chip.getAttribute('data-val') || '';
+        pe.value = v;
+        pe.focus();
+        // caret at end for chips that expect typing more
+        try {
+          const len = pe.value.length;
+          pe.setSelectionRange(len, len);
+        } catch(err) {}
+        document.querySelectorAll('#logProgChips .prog-chip').forEach(x => x.classList.remove('on'));
+        chip.classList.add('on');
+      });
+    });
+
+    if (saveBtn.dataset.wired === '1') return;
     saveBtn.dataset.wired = '1';
 
     if (bookMount && !bookMount.dataset.wired) {
       bookMount.dataset.wired = '1';
+      if (bookHidden && !bookHidden.value) bookHidden.value = 'phy1';
       const opts = DAY_PLAN_SUBJECTS.map(s => ({ value: s.key, label: s.label }));
-      bookMount.appendChild(buildCustomSelect(opts, 'phy1', (val) => {
+      bookMount.appendChild(buildCustomSelect(opts, bookHidden.value || 'phy1', (val) => {
         bookHidden.value = val;
         fillLogChapterOptions(val);
       }));
-      fillLogChapterOptions('phy1');
+      fillLogChapterOptions(bookHidden.value || 'phy1');
     }
 
-    saveBtn.addEventListener('click', () => {
-      const dk = dateKeyOf(today);
-      const bk = bookHidden.value;
-      const idx = parseInt(document.getElementById('logChapter').value, 10);
-      const pages = parseInt(document.getElementById('logPages').value, 10);
-      if (!bk || isNaN(idx)) return;
-      if (!pages || pages < 1) {
-        const el = document.getElementById('logPages');
-        if (el) {
-          el.focus();
-          el.style.borderColor = '#B23A3A';
-          setTimeout(() => { el.style.borderColor = ''; }, 1500);
+    saveBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      try {
+        const dk = dateKeyOf(today);
+        const bk = (bookHidden && bookHidden.value) || 'phy1';
+        const idx = parseInt((document.getElementById('logChapter') || {}).value, 10);
+        const progressEl = document.getElementById('logProgress');
+        const progress = (progressEl && progressEl.value || '').trim();
+        if (isNaN(idx)) {
+          showToast('Chapter বাছাই করো');
+          return;
         }
-        showToast('পৃষ্ঠা সংখ্যা লিখো');
-        return;
+        if (!progress) {
+          if (progressEl) {
+            progressEl.focus();
+            progressEl.style.borderColor = '#B23A3A';
+            setTimeout(() => { progressEl.style.borderColor = ''; }, 1500);
+          }
+          showToast('কতদূর পড়েছো লিখো বা নিচের অপশন চাপো');
+          return;
+        }
+        addDayAssignment(dk, bk, idx);
+        setChapterNote(bk, idx, progress);
+        const numMatch = progress.match(/(\d+)/);
+        if (numMatch) setChapterPages(bk, idx, parseInt(numMatch[1], 10));
+        else if (progress.indexOf('সব শেষ') !== -1) setChapterPages(bk, idx, 999);
+        else setChapterPages(bk, idx, Math.max(1, getChapterPages(bk, idx) || 1));
+        setCurrentIdx(bk, idx);
+        setPcmbSessionDone(dk, bk, idx, true);
+        const catKey = pcmbSrsCatKey(bk, idx);
+        if (!localStorage.getItem(pcmbSrsStorageKey(catKey))) {
+          initPcmbSrsEntry(dk, catKey);
+        }
+        const n = getDayAssignments(dk).length;
+        showToast('রেকর্ড ✓ · আজ ' + n + 'টা · রিভিশন কিউতে');
+        if (progressEl) progressEl.value = '';
+        document.querySelectorAll('#logProgChips .prog-chip').forEach(x => x.classList.remove('on'));
+        render(currentWeek);
+        updateRevisionBadges();
+        // re-bind chips after render if needed
+        wirePcmbLog();
+      } catch (err) {
+        console.error(err);
+        showToast('রেকর্ড ব্যর্থ — আবার চেষ্টা করো');
       }
-      // Add to today's log (or keep if already listed)
-      addDayAssignment(dk, bk, idx);
-      // Always update pages — cumulative progress
-      setChapterPages(bk, idx, pages);
-      setCurrentIdx(bk, idx);
-      setPcmbSessionDone(dk, bk, idx, true);
-      // Start revision schedule from first time this chapter is logged
-      const catKey = pcmbSrsCatKey(bk, idx);
-      if (!localStorage.getItem(pcmbSrsStorageKey(catKey))) {
-        initPcmbSrsEntry(dk, catKey);
-      }
-      const n = getDayAssignments(dk).length;
-      showToast(`রেকর্ড ✓ · আজ ${n}টা chapter · রিভিশন কিউতে`);
-      document.getElementById('logPages').value = '';
-      render(currentWeek);
-      updateRevisionBadges();
     });
   }
 
@@ -3084,6 +3129,7 @@ window.addEventListener('load', function() {
     renderTrackRow();
     updateTimerStats();
     renderWeekBalance(weekNum);
+    wirePcmbLog();
 
     // ---- Day-by-day breakdown ----
     const weekStart = dateForWeek(weekNum);
