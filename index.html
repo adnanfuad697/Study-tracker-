@@ -1303,6 +1303,79 @@
     font-weight: 700;
     cursor: pointer;
   }
+
+  .prog-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+  }
+  .prog-chip {
+    padding: 6px 10px;
+    border-radius: 20px;
+    border: 1.5px solid var(--line);
+    background: var(--bg);
+    color: var(--ink-muted);
+    font-size: 11.5px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .prog-chip:active, .prog-chip.on {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .prog-note-input {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1.5px solid var(--line);
+    background: var(--bg);
+    color: var(--ink);
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .prog-note-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+  .task.done, .chaptertask.completing {
+    background: rgba(45, 138, 78, 0.1);
+    border: 1px solid rgba(45, 138, 78, 0.35);
+    border-radius: 12px;
+    padding: 10px 12px;
+  }
+  .task.done label, .task.done b {
+    color: var(--ink);
+  }
+  .task input[type="checkbox"]:checked + label {
+    text-decoration: line-through;
+    opacity: 0.85;
+  }
+  .task:has(input:checked) {
+    background: rgba(45, 138, 78, 0.12);
+    border: 1px solid rgba(45, 138, 78, 0.35);
+    border-radius: 12px;
+    padding: 8px 10px;
+  }
+  .rev-done-flash {
+    animation: revFlash 0.45s ease;
+  }
+  @keyframes revFlash {
+    0% { background: rgba(45, 138, 78, 0.35); }
+    100% { background: rgba(45, 138, 78, 0.1); }
+  }
+  .prog-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent);
+    background: var(--accent-soft);
+    padding: 3px 8px;
+    border-radius: 10px;
+    margin-left: 4px;
+  }
 </style>
 </head>
 <body>
@@ -1409,8 +1482,16 @@
           <input type="hidden" id="logChapter" value="0">
         </div>
         <div class="pt-row">
-          <label>কত পৃষ্ঠা পর্যন্ত পড়েছো</label>
-          <input type="number" inputmode="numeric" id="logPages" min="1" placeholder="যেমন 20">
+          <label>কতদূর পড়েছো (লিখো বা অপশন চাপো)</label>
+          <input type="text" id="logProgress" class="prog-note-input" placeholder="যেমন: পৃষ্ঠা ২০ · স্লাইড ৫ · উদ্ভাস প্যারালেল ১২">
+          <div class="prog-chips" id="logProgChips">
+            <button type="button" class="prog-chip" data-val="সব শেষ">সব শেষ</button>
+            <button type="button" class="prog-chip" data-val="Book page ">Book page</button>
+            <button type="button" class="prog-chip" data-val="Udvash parallel ">Udvash parallel</button>
+            <button type="button" class="prog-chip" data-val="1st slide">1st slide</button>
+            <button type="button" class="prog-chip" data-val="Slide ">Slide</button>
+            <button type="button" class="prog-chip" data-val="Board example">Board example</button>
+          </div>
         </div>
         <div class="pt-actions">
           <button type="button" class="pt-save" id="logSaveBtn">রেকর্ড করো ✓</button>
@@ -2137,6 +2218,29 @@ window.addEventListener('load', function() {
   function setChapterPages(bookKey, idx, val) {
     try { localStorage.setItem(pcmbPageKey(bookKey, idx), String(Math.max(0, val))); } catch(e) {}
   }
+  function pcmbNoteKey(bookKey, idx) {
+    return `pcmbnote-${bookKey}-${idx}`;
+  }
+  function getChapterNote(bookKey, idx) {
+    try { return localStorage.getItem(pcmbNoteKey(bookKey, idx)) || ''; } catch(e) { return ''; }
+  }
+  function setChapterNote(bookKey, idx, note) {
+    try {
+      const t = (note || '').trim();
+      if (t) localStorage.setItem(pcmbNoteKey(bookKey, idx), t);
+      else localStorage.removeItem(pcmbNoteKey(bookKey, idx));
+    } catch(e) {}
+  }
+  function progressLabel(bookKey, idx) {
+    const note = getChapterNote(bookKey, idx);
+    const pages = getChapterPages(bookKey, idx);
+    if (note) return note;
+    if (pages > 0) return `পৃষ্ঠা ১–${pages}`;
+    return '';
+  }
+  function hasPcmbProgress(bookKey, idx) {
+    return getChapterPages(bookKey, idx) > 0 || !!getChapterNote(bookKey, idx);
+  }
   function getCurrentIdx(bookKey) {
     try {
       const v = parseInt(localStorage.getItem(`pcmbnext-${bookKey}`), 10);
@@ -2321,7 +2425,7 @@ window.addEventListener('load', function() {
           let pages = 0;
           if (isPcmbBook) {
             pages = getChapterPages(info.book.key, info.idx);
-            if (pages <= 0) continue; // PCMB: nothing logged yet — nothing to revise
+            if (!hasPcmbProgress(info.book.key, info.idx)) continue; // must have logged progress
           } else {
             if (!isChapterDone(info.book.key, info.idx)) continue; // Other books: must be marked complete
           }
@@ -2646,16 +2750,17 @@ window.addEventListener('load', function() {
         const stageIdx = Math.min(entry.stage, PCMB_REVISION_STAGE_TEXT.length - 1);
         const roundLabel = entry.stage + 1;
         const pages = getChapterPages(entry.book.key, entry.idx);
-        const pageNote = pages > 0 ? ` · <b>পৃষ্ঠা ১–${pages}</b>` : '';
+        const prog = progressLabel(entry.book.key, entry.idx);
+        const pageNote = prog ? ` · <span class="prog-badge">${prog}</span>` : (pages > 0 ? ` · <b>পৃষ্ঠা ১–${pages}</b>` : '');
         const stageNames = ['১ম (১ দিন)', '২য় (৩ দিন)', '৩য় (৭ দিন)', '৪র্থ (১৫ দিন)', '৫ম (৩০ দিন)', '৬ষ্ঠ+ (৯০ দিন)'];
         const stageName = stageNames[Math.min(entry.stage, stageNames.length - 1)];
         div.innerHTML = `<input type="checkbox" id="${domId}" ${isRealToday ? '' : 'disabled'}><label for="${domId}"><span class="taskemoji">🔁</span><b>${entry.book.name} — ${entry.name}</b>${pageNote}<br><span style="color:var(--ink-muted); font-size:12px;">${stageName}: ${PCMB_REVISION_STAGE_TEXT[stageIdx]}</span></label>`;
         if (isRealToday) {
           div.querySelector('input').addEventListener('change', (e) => {
             if (e.target.checked) {
+              div.classList.add('done', 'rev-done-flash');
               advancePcmbSrsEntry(entry.catKey);
-              render(currentWeek);
-              updateRevisionBadges();
+              setTimeout(() => { render(currentWeek); updateRevisionBadges(); }, 280);
             }
           });
         }
@@ -2688,9 +2793,9 @@ window.addEventListener('load', function() {
         if (isRealToday) {
           div.querySelector('input').addEventListener('change', (e) => {
             if (e.target.checked) {
+              div.classList.add('done', 'rev-done-flash');
               due.forEach(entry => advanceSrsEntry(entry));
-              render(currentWeek);
-              updateRevisionBadges();
+              setTimeout(() => { render(currentWeek); updateRevisionBadges(); }, 280);
             }
           });
         }
