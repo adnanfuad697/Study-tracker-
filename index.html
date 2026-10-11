@@ -1389,39 +1389,32 @@
       <p class="grouptitle" style="margin-top:4px;">THIS WEEK, DAY BY DAY</p>
       <div class="daystrip" id="dayStrip"></div>
 
-      <p class="grouptitle">TODAY'S CHAPTER — PCMB</p>
+      <p class="grouptitle">PCMB — আজ কী পড়েছো (রেকর্ড)</p>
       <div class="weekbal" id="weekBalance">
-        <div class="wbtitle">এই সপ্তাহে subject কয়বার বাছাই</div>
+        <div class="wbtitle">এই সপ্তাহে subject (শুধু রেকর্ড + ✓ হলে count)</div>
         <div class="weekbal-row" id="weekBalanceRow"></div>
       </div>
-      <div class="dayplan-box">
-        <div class="dplabel">আজকের subject বাছাই (Private / Udvash)</div>
-        <div class="dayplan-chips" id="dayPlanChips"></div>
-        <div class="dayplan-hint">Subject on/off — নিচে শুধু যা assign করেছো তাই আসবে।</div>
-      </div>
 
-      <div class="plan-tonight" id="planTonight">
-        <div class="pt-title">প্ল্যান — কোন দিনে কী পড়বে</div>
-        <div class="pt-sub">প্রতি বইয়ে ১ বা ২টা chapter (তোমার ইচ্ছা)। দৈনিক টার্গেট ~৪টা chapter। অটো নয় — তুমি assign করো।</div>
-        <div class="pt-row">
-          <label>তারিখ</label>
-          <input type="date" id="assignDate">
-        </div>
+      <div class="plan-tonight" id="pcmbLogBox">
+        <div class="pt-title">সারাদিনের PCMB রেকর্ড</div>
+        <div class="pt-sub">সারাদিন যা পড়ো (ইচ্ছামতো) এখানে রেকর্ড করো। সেই রেকর্ড থেকেই রিভিশন সিডিউল + due হলে লাল মার্ক।</div>
         <div class="pt-row">
           <label>বই</label>
-          <div id="assignBookMount"></div>
-          <input type="hidden" id="assignBook" value="phy1">
+          <div id="logBookMount"></div>
+          <input type="hidden" id="logBook" value="phy1">
         </div>
         <div class="pt-row">
           <label>Chapter</label>
-          <div id="assignChapterMount"></div>
-          <input type="hidden" id="assignChapter" value="0">
+          <div id="logChapterMount"></div>
+          <input type="hidden" id="logChapter" value="0">
+        </div>
+        <div class="pt-row">
+          <label>কত পৃষ্ঠা পর্যন্ত পড়েছো</label>
+          <input type="number" inputmode="numeric" id="logPages" min="1" placeholder="যেমন 20">
         </div>
         <div class="pt-actions">
-          <button type="button" class="pt-save" id="assignSaveBtn">Assign করো</button>
-          <button type="button" class="pt-clear" id="assignClearDayBtn">এই দিন মুছো</button>
+          <button type="button" class="pt-save" id="logSaveBtn">রেকর্ড করো ✓</button>
         </div>
-        <div class="assigned-list" id="assignedList"></div>
       </div>
 
       <div class="daycard">
@@ -1764,11 +1757,7 @@ window.addEventListener('load', function() {
     if (list.some(a => a.bookKey === bookKey && a.chIdx === chIdx)) {
       return { ok: true, list, duplicate: true };
     }
-    const sameBookCount = list.filter(a => a.bookKey === bookKey).length;
-    // Your choice: 1 or 2 chapters per book per day (max 2)
-    if (sameBookCount >= 2) {
-      return { ok: false, reason: 'limit_book' };
-    }
+    // Free logging: any chapters you studied today (no hard limit)
     list = list.concat([{ bookKey, chIdx }]);
     setDayAssignments(dateKey, list);
     // turn subject chip on for that day
@@ -1831,73 +1820,78 @@ window.addEventListener('load', function() {
     }));
   }
 
-  function wireAssignPlanner() {
-    const dateEl = document.getElementById('assignDate');
-    const bookHidden = document.getElementById('assignBook');
-    const bookMount = document.getElementById('assignBookMount');
-    const saveBtn = document.getElementById('assignSaveBtn');
-    const clearBtn = document.getElementById('assignClearDayBtn');
-    if (!dateEl || !saveBtn || saveBtn.dataset.wired === '1') return;
-    saveBtn.dataset.wired = '1';
+  function fillLogChapterOptions(bookKey) {
+    const book = pcmbBook(bookKey);
+    const mount = document.getElementById('logChapterMount');
+    if (!mount || !book) return;
+    mount.innerHTML = '';
+    const opts = book.chapters.map((name, i) => ({
+      value: i,
+      label: `${i + 1}. ${name}${isChapterDone(bookKey, i) ? ' ✓' : ''}`
+    }));
+    let selected = getCurrentIdx(bookKey);
+    if (selected >= book.chapters.length) selected = 0;
+    document.getElementById('logChapter').value = String(selected);
+    const pages = getChapterPages(bookKey, selected);
+    const pe = document.getElementById('logPages');
+    if (pe) pe.value = pages > 0 ? pages : '';
+    mount.appendChild(buildCustomSelect(opts, selected, (val) => {
+      document.getElementById('logChapter').value = String(val);
+      const p2 = getChapterPages(bookKey, parseInt(val, 10));
+      if (pe) pe.value = p2 > 0 ? p2 : '';
+    }));
+  }
 
-    // default date = tomorrow
-    const tom = new Date(today);
-    tom.setDate(tom.getDate() + 1);
-    if (!dateEl.value) dateEl.value = dateKeyOf(tom);
+  function wirePcmbLog() {
+    const bookHidden = document.getElementById('logBook');
+    const bookMount = document.getElementById('logBookMount');
+    const saveBtn = document.getElementById('logSaveBtn');
+    if (!saveBtn || saveBtn.dataset.wired === '1') return;
+    saveBtn.dataset.wired = '1';
 
     if (bookMount && !bookMount.dataset.wired) {
       bookMount.dataset.wired = '1';
       const opts = DAY_PLAN_SUBJECTS.map(s => ({ value: s.key, label: s.label }));
       bookMount.appendChild(buildCustomSelect(opts, 'phy1', (val) => {
         bookHidden.value = val;
-        fillAssignChapterOptions(val);
+        fillLogChapterOptions(val);
       }));
-      fillAssignChapterOptions('phy1');
+      fillLogChapterOptions('phy1');
     }
 
-    dateEl.addEventListener('change', () => {
-      renderAssignedList(dateEl.value || dateKeyOf(tom));
-    });
-
     saveBtn.addEventListener('click', () => {
-      const dk = dateEl.value;
+      const dk = dateKeyOf(today);
       const bk = bookHidden.value;
-      const idx = parseInt(document.getElementById('assignChapter').value, 10);
-      if (!dk || !bk || isNaN(idx)) return;
-      const result = addDayAssignment(dk, bk, idx);
-      if (!result.ok && result.reason === 'limit_book') {
-        showToast('এই বইয়ে আজ/সেদিন ইতিমধ্যে ২টা chapter — আর নয়');
+      const idx = parseInt(document.getElementById('logChapter').value, 10);
+      const pages = parseInt(document.getElementById('logPages').value, 10);
+      if (!bk || isNaN(idx)) return;
+      if (!pages || pages < 1) {
+        const el = document.getElementById('logPages');
+        if (el) {
+          el.focus();
+          el.style.borderColor = '#B23A3A';
+          setTimeout(() => { el.style.borderColor = ''; }, 1500);
+        }
+        showToast('পৃষ্ঠা সংখ্যা লিখো');
         return;
       }
+      // Add to today's log (or keep if already listed)
+      addDayAssignment(dk, bk, idx);
+      // Always update pages — cumulative progress
+      setChapterPages(bk, idx, pages);
       setCurrentIdx(bk, idx);
-      const n = (result.list || getDayAssignments(dk)).length;
-      if (result.overTarget) {
-        showToast(`Assign ✓ · আজ ${n}টা (টার্গেট ৪ — একটু বেশি)`);
-      } else {
-        showToast(`Assign ✓ · ${n}/4 chapter আজকের প্ল্যানে`);
+      setPcmbSessionDone(dk, bk, idx, true);
+      // Start revision schedule from first time this chapter is logged
+      const catKey = pcmbSrsCatKey(bk, idx);
+      if (!localStorage.getItem(pcmbSrsStorageKey(catKey))) {
+        initPcmbSrsEntry(dk, catKey);
       }
-      renderAssignedList(dk);
+      const n = getDayAssignments(dk).length;
+      showToast(`রেকর্ড ✓ · আজ ${n}টা chapter · রিভিশন কিউতে`);
+      document.getElementById('logPages').value = '';
       render(currentWeek);
+      updateRevisionBadges();
     });
-
-    clearBtn.addEventListener('click', async () => {
-      const dk = dateEl.value;
-      if (!dk) return;
-      const ok = await showModal({
-        icon: '🗑️',
-        title: 'দিনের assign মুছবে?',
-        message: dk + ' তারিখের সব book/chapter assign মুছে যাবে।',
-        okText: 'মুছো',
-        cancelText: 'না',
-        danger: true
-      });
-      if (!ok) return;
-      setDayAssignments(dk, []);
-      showToast('মুছে ফেলা হয়েছে');
-      render(currentWeek);
-    });
-
-    renderAssignedList(dateEl.value);
   }
 
   function getCustomDayPlan(dateKey, dow) {
@@ -2251,7 +2245,7 @@ window.addEventListener('load', function() {
     const title = document.querySelector('#weekBalance .wbtitle');
     if (title) {
       title.textContent = weekNum === realWeek
-        ? 'এই সপ্তাহে subject (শুধু ✓ দিলে count)'
+        ? 'এই সপ্তাহে subject (রেকর্ড হলে count)'
         : `Week ${weekNum} — subject কয়বার`;
     }
     row.innerHTML = '';
@@ -2427,67 +2421,40 @@ window.addEventListener('load', function() {
     const container = document.getElementById('pcmbFocusTasks');
     container.innerHTML = '';
 
-    const dow = dDate.getDay();
-    const customBooks = getCustomDayPlan(dateKey, dow);
-    renderDayPlanChips(dateKey, dow);
-
-    // User-selected subjects for this date (or default weekday plan)
-    if (!customBooks.length) {
+    // Show today's PCMB study log (what user recorded — not forced tasks)
+    const logs = getDayAssignments(dateKey);
+    if (!logs.length) {
       const msg = document.createElement('div');
       msg.className = 'timingnote';
-      msg.textContent = 'উপরে subject বাছাই করো — Private / Udvash অনুযায়ী।';
+      msg.innerHTML = 'আজ এখনো কোনো PCMB রেকর্ড নেই। উপরে বই + chapter + পৃষ্ঠা লিখে <b>রেকর্ড করো</b>।';
       container.appendChild(msg);
       return;
     }
-    const plan = { type: 'study', books: customBooks };
 
-    function appendChapterRow(book, chIdx) {
-      if (isPcmbSessionDone(dateKey, book.key, chIdx)) {
-        const pages = getChapterPages(book.key, chIdx);
-        const div = document.createElement('div');
-        div.className = 'task done';
-        div.innerHTML = `<span class="taskemoji">✅</span><b>${book.name} — ${book.chapters[chIdx]}</b>` +
-          (pages > 0 ? ` <span class="pagesbadge">পৃষ্ঠা ১–${pages}</span>` : '') +
-          ` <span style="color:var(--ink-muted);font-size:12px;">· আজ সেভ</span>`;
-        container.appendChild(div);
-        return;
-      }
-      const row = pcmbTaskRow(book, chIdx, STUDY_TASK_TEXT[book.subjectType], false, () => {
-        setPcmbSessionDone(dateKey, book.key, chIdx, true);
+    logs.forEach(a => {
+      const book = pcmbBook(a.bookKey);
+      if (!book) return;
+      const chIdx = a.chIdx;
+      if (chIdx < 0 || chIdx >= book.chapters.length) return;
+      const pages = getChapterPages(book.key, chIdx);
+      const done = isPcmbSessionDone(dateKey, book.key, chIdx);
+      const div = document.createElement('div');
+      div.className = 'task' + (done ? ' done' : '');
+      const pageTxt = pages > 0 ? ` <span class="pagesbadge">পৃষ্ঠা ১–${pages}</span>` : '';
+      div.innerHTML = `<span class="taskemoji">${done ? '✅' : '📖'}</span>
+        <div style="flex:1;">
+          <b>${book.name} — ${book.chapters[chIdx]}</b>${pageTxt}
+          <div style="font-size:11px;color:var(--ink-muted);margin-top:2px;">${done ? 'রেকর্ড আছে · রিভিশন সিডিউল চালু' : 'সেভ করা রেকর্ড'}</div>
+        </div>
+        <button type="button" class="ch-remove" data-bk="${book.key}" data-idx="${chIdx}">মুছো</button>`;
+      div.querySelector('.ch-remove').addEventListener('click', () => {
+        removeDayAssignment(dateKey, book.key, chIdx);
+        // do not wipe SRS or pages — only remove from today's log list
+        showToast('রেকর্ড লিস্ট থেকে সরানো হয়েছে');
         render(currentWeek);
-      }, dateKey);
-      container.appendChild(row);
-    }
-
-    // Explicit assignments only — your input, not auto next-chapter
-    const assignments = getDayAssignments(dateKey);
-    if (assignments.length) {
-      assignments.forEach(a => {
-        const book = pcmbBook(a.bookKey);
-        if (!book) return;
-        if (a.chIdx < 0 || a.chIdx >= book.chapters.length) return;
-        appendChapterRow(book, a.chIdx);
       });
-    } else {
-      const hint = document.createElement('div');
-      hint.className = 'timingnote';
-      hint.style.marginBottom = '10px';
-      hint.innerHTML = 'এই দিনে assign নেই। উপরে <b>প্ল্যান</b> থেকে বই + chapter সেট করো। নিচে শুধু সাজেস্ট (next incomplete)।';
-      container.appendChild(hint);
-      plan.books.forEach(bk => {
-        const book = pcmbBook(bk);
-        if (!book) return;
-        const nextIdx = getNextIncompleteChapter(book);
-        if (nextIdx === null) {
-          const div = document.createElement('div');
-          div.className = 'task';
-          div.innerHTML = `<span class="taskemoji">✅</span>${book.name}: সব chapter শেষ!`;
-          container.appendChild(div);
-        } else {
-          appendChapterRow(book, nextIdx);
-        }
-      });
-    }
+      container.appendChild(div);
+    });
   }
 
   function renderOtherFocus(weekNum, dDate) {
@@ -2685,8 +2652,11 @@ window.addEventListener('load', function() {
         div.innerHTML = `<input type="checkbox" id="${domId}" ${isRealToday ? '' : 'disabled'}><label for="${domId}"><span class="taskemoji">🔁</span><b>${entry.book.name} — ${entry.name}</b>${pageNote}<br><span style="color:var(--ink-muted); font-size:12px;">${stageName}: ${PCMB_REVISION_STAGE_TEXT[stageIdx]}</span></label>`;
         if (isRealToday) {
           div.querySelector('input').addEventListener('change', (e) => {
-            if (e.target.checked) advancePcmbSrsEntry(entry.catKey);
-            render(currentWeek);
+            if (e.target.checked) {
+              advancePcmbSrsEntry(entry.catKey);
+              render(currentWeek);
+              updateRevisionBadges();
+            }
           });
         }
         card.appendChild(div);
@@ -2717,8 +2687,11 @@ window.addEventListener('load', function() {
         div.innerHTML = `<input type="checkbox" id="${domId}" ${isRealToday ? '' : 'disabled'}><label for="${domId}"><span class="taskemoji">🔁</span>${cat.name}${countLabel}</label>`;
         if (isRealToday) {
           div.querySelector('input').addEventListener('change', (e) => {
-            if (e.target.checked) due.forEach(entry => advanceSrsEntry(entry));
-            render(currentWeek);
+            if (e.target.checked) {
+              due.forEach(entry => advanceSrsEntry(entry));
+              render(currentWeek);
+              updateRevisionBadges();
+            }
           });
         }
         card.appendChild(div);
@@ -3006,15 +2979,6 @@ window.addEventListener('load', function() {
     renderTrackRow();
     updateTimerStats();
     renderWeekBalance(weekNum);
-    const ad = document.getElementById('assignDate');
-    if (ad) {
-      if (!ad.value) {
-        const tom = new Date(today);
-        tom.setDate(tom.getDate() + 1);
-        ad.value = dateKeyOf(tom);
-      }
-      renderAssignedList(ad.value);
-    }
 
     // ---- Day-by-day breakdown ----
     const weekStart = dateForWeek(weekNum);
@@ -3412,7 +3376,7 @@ window.addEventListener('load', function() {
     });
   }
 
-  wireAssignPlanner();
+  wirePcmbLog();
   wireTimerV2();
   wireMocks();
   wireBackup();
