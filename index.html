@@ -1376,6 +1376,61 @@
     border-radius: 10px;
     margin-left: 4px;
   }
+
+  .rev-due-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .due-pill {
+    font-size: 12px;
+    font-weight: 700;
+    padding: 6px 10px;
+    border-radius: 20px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    border: 1px solid var(--line);
+  }
+  .due-pill.over {
+    background: rgba(229,57,53,0.12);
+    color: #E53935;
+    border-color: rgba(229,57,53,0.35);
+  }
+  .score-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+  }
+  .score-row label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink-muted);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .score-row input {
+    width: 72px;
+    padding: 6px 8px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: var(--bg);
+    color: var(--ink);
+    font-weight: 700;
+    font-size: 13px;
+  }
+  .safety-note {
+    font-size: 12px;
+    color: #B23A3A;
+    font-weight: 700;
+    margin: 8px 0;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: rgba(178,58,58,0.08);
+    border: 1px solid rgba(178,58,58,0.25);
+  }
 </style>
 </head>
 <body>
@@ -1438,8 +1493,11 @@
 
       <div class="rev-home-alert" id="revHomeAlert">
         <div class="rha-num" id="revHomeNum">0</div>
-        <div class="rha-text">আজ <span id="revHomeCount">0</span>টা রিভিশন বাকি — Revision ট্যাবে যাও</div>
+        <div class="rha-text">আজ <span id="revHomeCount">0</span>টা রিভিশন বাকি — Revision ট্যাবে যাও
+          <div id="revHomeDetail" style="font-size:11px;font-weight:600;color:var(--ink-muted);margin-top:4px;"></div>
+        </div>
       </div>
+      <div id="revDueStats" class="rev-due-stats"></div>
 
       <p class="grouptitle">TRACK — BUET / MEDICAL</p>
       <div class="trackrow" id="trackRow">
@@ -1470,7 +1528,7 @@
 
       <div class="plan-tonight" id="pcmbLogBox">
         <div class="pt-title">সারাদিনের PCMB রেকর্ড</div>
-        <div class="pt-sub">সারাদিন যা পড়ো (ইচ্ছামতো) এখানে রেকর্ড করো। সেই রেকর্ড থেকেই রিভিশন সিডিউল + due হলে লাল মার্ক।</div>
+        <div class="pt-sub">ধাপ ১ শেষ («সব শেষ») হলে অধ্যায় সম্পন্ন → ১/৩/৭/১৫/৩০/৯০ রিভিশন শুরু। সপ্তাহে সর্বোচ্চ ২টা নতুন অধ্যায়। বকেয়া ৩+ হলে নতুন অধ্যায় আটকাবে।</div>
         <div class="pt-row">
           <label>বই</label>
           <div id="logBookMount"></div>
@@ -1492,6 +1550,10 @@
             <button type="button" class="prog-chip" data-val="Slide ">Slide</button>
             <button type="button" class="prog-chip" data-val="Board example">Board example</button>
           </div>
+        </div>
+        <div class="pt-row" id="logScoreRow">
+          <label>ধাপ ১ স্কোর % (শুধু «সব শেষ» হলে, optional)</label>
+          <input type="number" inputmode="numeric" id="logStep1Score" min="0" max="100" placeholder="যেমন 75">
         </div>
         <div class="pt-actions">
           <button type="button" class="pt-save" id="logSaveBtn">রেকর্ড করো ✓</button>
@@ -1760,13 +1822,14 @@ window.addEventListener('load', function() {
 
   // 5-stage revision content, matching your schedule: 1 day, 7 days, 15 days, 30 days, 90 days (then repeats).
   const PCMB_REVISION_STAGE_TEXT = [
-    'মূল বইয়ের দাগানো লাইন ও সূত্র দেখো',       // 1 day
-    'শর্ট নোট ও বেসিক কনসেপ্ট রিভাইজ করো',     // 3 days
-    'কঠিন ও গুরুত্বপূর্ণ টপিক আবার দেখো',        // 7 days
-    'টেস্ট পেপার ও বোর্ড প্রশ্ন (CQ + MCQ) সলভ করো', // 15 days
-    'ফর্মুলা বুক ও শর্ট নোট রিভিশন করো',         // 30 days
-    'ফুল রিভিশন — সূত্র + নোট + প্রশ্ন'           // 90 days (repeat)
+    'নোট থেকে ২০ মিনিট রিকল — বই বন্ধ করে সূত্র ও মূল পয়েন্ট বলো',                    // Day 1
+    'ফুল chapter টপিক-বাই-টপিক রিভিশন — পৃষ্ঠা না, শুধু টপিক/কনসেপ্ট কভার করো',          // Day 3
+    'HSC প্রশ্নব্যাংক — ১০–১৫টা প্রশ্ন সলভ করো',                                       // Day 7
+    'ভুল হওয়া প্রশ্নগুলো আবার করো',                                                   // Day 15
+    'ভর্তি প্রশ্নব্যাংক (গণিত ও পদার্থে বেশি ফোকাস)',                                   // Day 30
+    'কয়েকটা অধ্যায় মিলিয়ে সময় ধরে মিশ্র MCQ টেস্ট'                                  // Day 90+
   ];
+  const PCMB_STAGE_LABELS = ['দিন ১ · রিকল', 'দিন ৩ · টপিক', 'দিন ৭ · HSC', 'দিন ১৫ · ভুল', 'দিন ৩০ · ভর্তি', 'দিন ৯০ · মিশ্র'];
 
   // Every day is now a study day — revision lives only in the Revision tab.
   const WEEKDAY_PLAN = {
@@ -1993,25 +2056,48 @@ window.addEventListener('load', function() {
           showToast('কতদূর পড়েছো লিখো বা নিচের অপশন চাপো');
           return;
         }
+
+        const isStep1Done = progress.indexOf('সব শেষ') !== -1 || /^(done|complete)$/i.test(progress);
+        const catKey = pcmbSrsCatKey(bk, idx);
+        const alreadySrs = !!localStorage.getItem(pcmbSrsStorageKey(catKey));
+        const br = countPcmbDueBreakdown(dk);
+
+        // Safety: 3+ overdue PCMB revisions → block NEW chapter (step1 complete)
+        if (isStep1Done && !alreadySrs && br.overdueCount >= 3) {
+          showToast('বকেয়া রিভিশন ৩+ · আগে Revision শেষ করো');
+          return;
+        }
+        // Weekly cap: max 2 new chapters (first-time step1)
+        if (isStep1Done && !alreadySrs && countNewChaptersThisWeek() >= 2) {
+          showToast('এই সপ্তাহে ইতিমধ্যে ২টা নতুন অধ্যায় · আগামী সপ্তাহে');
+          return;
+        }
+
         addDayAssignment(dk, bk, idx);
         setChapterNote(bk, idx, progress);
         const numMatch = progress.match(/(\d+)/);
         if (numMatch) setChapterPages(bk, idx, parseInt(numMatch[1], 10));
-        else if (progress.indexOf('সব শেষ') !== -1) setChapterPages(bk, idx, 999);
+        else if (isStep1Done) setChapterPages(bk, idx, 999);
         else setChapterPages(bk, idx, Math.max(1, getChapterPages(bk, idx) || 1));
         setCurrentIdx(bk, idx);
         setPcmbSessionDone(dk, bk, idx, true);
-        const catKey = pcmbSrsCatKey(bk, idx);
-        if (!localStorage.getItem(pcmbSrsStorageKey(catKey))) {
-          initPcmbSrsEntry(dk, catKey);
+
+        // Step 1 complete → chapter done + start 1/3/7/15/30/90 clock
+        if (isStep1Done) {
+          setChapterDone(bk, idx, true);
+          if (!alreadySrs) initPcmbSrsEntry(dk, catKey);
+          const s1el = document.getElementById('logStep1Score');
+          if (s1el && String(s1el.value).trim() !== '') setChapterScore(bk, idx, 'step1', s1el.value);
+          if (s1el) s1el.value = '';
+          showToast('ধাপ ১ সম্পন্ন · রিভিশন ঘড়ি চালু (১→৩→৭→১৫→৩০→৯০)');
+        } else {
+          showToast('প্রোগ্রেস রেকর্ড ✓ · «সব শেষ» চাপলে রিভিশন শুরু');
         }
-        const n = getDayAssignments(dk).length;
-        showToast('রেকর্ড ✓ · আজ ' + n + 'টা · রিভিশন কিউতে');
+
         if (progressEl) progressEl.value = '';
         document.querySelectorAll('#logProgChips .prog-chip').forEach(x => x.classList.remove('on'));
         render(currentWeek);
         updateRevisionBadges();
-        // re-bind chips after render if needed
         wirePcmbLog();
       } catch (err) {
         console.error(err);
@@ -2164,7 +2250,7 @@ window.addEventListener('load', function() {
   const VOCAB_SRS_INTERVALS = [1, 3, 7, 16, 35, 90];
   // PCMB: chapters must survive ~2 years to admission — never fully stops,
   // keeps repeating at the longest interval so nothing silently drops off.
-  const PCMB_SRS_INTERVALS = [1, 3, 7, 15, 30, 90]; // then repeats at 90 days
+  const PCMB_SRS_INTERVALS = [1, 3, 7, 15, 30, 90]; // 1/3/7/15/30/90 from step-1 complete
 
   function intervalsFor(domain) {
     return domain === 'pcmb' ? PCMB_SRS_INTERVALS : VOCAB_SRS_INTERVALS;
@@ -2286,6 +2372,67 @@ window.addEventListener('load', function() {
   function hasPcmbProgress(bookKey, idx) {
     return getChapterPages(bookKey, idx) > 0 || !!getChapterNote(bookKey, idx);
   }
+
+  function pcmbScoreKey(bookKey, idx, kind) {
+    return `pcmbscore-${bookKey}-${idx}-${kind}`; // kind: step1 | d7 | d30
+  }
+  function getChapterScore(bookKey, idx, kind) {
+    try {
+      const v = localStorage.getItem(pcmbScoreKey(bookKey, idx, kind));
+      return v === null || v === '' ? '' : v;
+    } catch(e) { return ''; }
+  }
+  function setChapterScore(bookKey, idx, kind, val) {
+    try {
+      const t = String(val === undefined || val === null ? '' : val).trim();
+      if (t === '') localStorage.removeItem(pcmbScoreKey(bookKey, idx, kind));
+      else localStorage.setItem(pcmbScoreKey(bookKey, idx, kind), t);
+    } catch(e) {}
+  }
+
+  function countPcmbDueBreakdown(todayKey) {
+    const due = [];
+    const overdue = [];
+    try {
+      getAllDuePcmbEntries(todayKey).forEach(entry => {
+        try {
+          const raw = localStorage.getItem(pcmbSrsStorageKey(entry.catKey));
+          const state = raw ? JSON.parse(raw) : null;
+          if (!state || !state.nextDue) { due.push(entry); return; }
+          if (state.nextDue < todayKey) overdue.push(entry);
+          else due.push(entry);
+        } catch(e) { due.push(entry); }
+      });
+    } catch(e) {}
+    return { due, overdue, total: due.length + overdue.length, dueCount: due.length, overdueCount: overdue.length };
+  }
+
+  function countNewChaptersThisWeek() {
+    // Chapters whose SRS learnDate falls in current calendar week (Mon-Sun or START week)
+    const realWeek = Math.max(1, weekNumberFor(today));
+    const weekStart = dateForWeek(realWeek);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+    const startKey = dateKeyOf(weekStart);
+    const endKey = dateKeyOf(weekEnd);
+    let n = 0;
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!k || !k.startsWith('pcmbsrs-')) continue;
+        const catKey = k.slice('pcmbsrs-'.length);
+        const info = findPcmbByCatKey(catKey);
+        if (!info || !PCMB_BOOK_KEYS.includes(info.book.key)) continue;
+        try {
+          const state = JSON.parse(localStorage.getItem(k));
+          const ld = state.learnDate || '';
+          if (ld >= startKey && ld <= endKey) n++;
+        } catch(e) {}
+      }
+    } catch(e) {}
+    return n;
+  }
+
   function getCurrentIdx(bookKey) {
     try {
       const v = parseInt(localStorage.getItem(`pcmbnext-${bookKey}`), 10);
@@ -2717,39 +2864,47 @@ window.addEventListener('load', function() {
   function countDueRevisionsToday() {
     const todayKey = dateKeyOf(today);
     let n = 0;
+    try { n += getAllDuePcmbEntries(todayKey).length; } catch(e) {}
     try {
-      n += getAllDuePcmbEntries(todayKey).length;
-    } catch(e) {}
-    try {
-      vocabCategories.forEach(cat => {
-        n += getDueEntries(cat.key, todayKey).length;
-      });
+      vocabCategories.forEach(cat => { n += getDueEntries(cat.key, todayKey).length; });
     } catch(e) {}
     return n;
   }
 
   function updateRevisionBadges() {
-    const n = countDueRevisionsToday();
+    const todayKey = dateKeyOf(today);
+    const br = countPcmbDueBreakdown(todayKey);
+    let vocabN = 0;
+    try {
+      vocabCategories.forEach(cat => { vocabN += getDueEntries(cat.key, todayKey).length; });
+    } catch(e) {}
+    const n = br.total + vocabN;
     const badge = document.getElementById('revTabBadge');
     if (badge) {
       if (n > 0) {
         badge.textContent = n > 99 ? '99+' : String(n);
         badge.classList.add('show');
-      } else {
-        badge.classList.remove('show');
-      }
+      } else badge.classList.remove('show');
     }
     const alert = document.getElementById('revHomeAlert');
     const num = document.getElementById('revHomeNum');
     const cnt = document.getElementById('revHomeCount');
+    const detail = document.getElementById('revHomeDetail');
     if (alert && num && cnt) {
       if (n > 0) {
         num.textContent = n > 99 ? '99+' : String(n);
         cnt.textContent = String(n);
+        if (detail) {
+          detail.textContent = 'PCMB বকেয়া ' + br.overdueCount + ' · আজকের ' + br.dueCount + (vocabN ? (' · Vocab ' + vocabN) : '');
+        }
         alert.classList.add('show');
-      } else {
-        alert.classList.remove('show');
-      }
+      } else alert.classList.remove('show');
+    }
+    const box = document.getElementById('revDueStats');
+    if (box) {
+      box.innerHTML = '<span class="due-pill">আজ ' + br.dueCount + '</span>' +
+        '<span class="due-pill over">ওভারডিউ ' + br.overdueCount + '</span>' +
+        '<span class="due-pill">নতুন অধ্যায় এই সপ্তাহে ' + countNewChaptersThisWeek() + '/2</span>';
     }
   }
 
@@ -2797,13 +2952,32 @@ window.addEventListener('load', function() {
         const pages = getChapterPages(entry.book.key, entry.idx);
         const prog = progressLabel(entry.book.key, entry.idx);
         const pageNote = prog ? ` · <span class="prog-badge">${prog}</span>` : (pages > 0 ? ` · <b>পৃষ্ঠা ১–${pages}</b>` : '');
-        const stageNames = ['১ম (১ দিন)', '২য় (৩ দিন)', '৩য় (৭ দিন)', '৪র্থ (১৫ দিন)', '৫ম (৩০ দিন)', '৬ষ্ঠ+ (৯০ দিন)'];
+        const stageNames = PCMB_STAGE_LABELS;
         const stageName = stageNames[Math.min(entry.stage, stageNames.length - 1)];
         div.innerHTML = `<input type="checkbox" id="${domId}" ${isRealToday ? '' : 'disabled'}><label for="${domId}"><span class="taskemoji">🔁</span><b>${entry.book.name} — ${entry.name}</b>${pageNote}<br><span style="color:var(--ink-muted); font-size:12px;">${stageName}: ${PCMB_REVISION_STAGE_TEXT[stageIdx]}</span></label>`;
+        // Show saved scores
+        const s1 = getChapterScore(entry.book.key, entry.idx, 'step1');
+        const s7 = getChapterScore(entry.book.key, entry.idx, 'd7');
+        const s30 = getChapterScore(entry.book.key, entry.idx, 'd30');
+        const scoreBits = [s1 && ('ধাপ১ ' + s1 + '%'), s7 && ('দিন৭ ' + s7 + '%'), s30 && ('দিন৩০ ' + s30 + '%')].filter(Boolean);
+        if (scoreBits.length) {
+          const sc = document.createElement('div');
+          sc.style.cssText = 'font-size:11px;color:var(--ink-muted);margin:4px 0 0 28px;font-weight:600;';
+          sc.textContent = scoreBits.join(' · ');
+          div.appendChild(sc);
+        }
         if (isRealToday) {
           div.querySelector('input').addEventListener('change', (e) => {
             if (e.target.checked) {
               div.classList.add('done', 'rev-done-flash');
+              // Capture score for day-7 (stage 1) and day-30 (stage 3) rounds
+              if (entry.stage === 2) {
+                const v = window.prompt('দিন ৭ (HSC) স্কোর % optional:', s7 || '');
+                if (v !== null && String(v).trim() !== '') setChapterScore(entry.book.key, entry.idx, 'd7', v);
+              } else if (entry.stage === 4) {
+                const v = window.prompt('দিন ৩০ (ভর্তি) স্কোর % optional:', s30 || '');
+                if (v !== null && String(v).trim() !== '') setChapterScore(entry.book.key, entry.idx, 'd30', v);
+              }
               advancePcmbSrsEntry(entry.catKey);
               setTimeout(() => { render(currentWeek); updateRevisionBadges(); }, 280);
             }
