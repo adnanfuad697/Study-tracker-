@@ -1528,7 +1528,11 @@
 
       <div class="plan-tonight" id="pcmbLogBox">
         <div class="pt-title">সারাদিনের PCMB রেকর্ড</div>
-        <div class="pt-sub">ধাপ ১ শেষ («সব শেষ») হলে অধ্যায় সম্পন্ন → ১/৩/৭/১৫/৩০/৯০ রিভিশন শুরু। সপ্তাহে সর্বোচ্চ ২টা নতুন অধ্যায়। বকেয়া ৩+ হলে নতুন অধ্যায় আটকাবে।</div>
+        <div class="pt-sub">ধাপ ১ শেষ («সব শেষ») হলে অধ্যায় সম্পন্ন → ১/৩/৭/১৫/৩০/৯০ রিভিশন শুরু। অতীতের দিনের রেকর্ডও তারিখ বেছে লিখতে পারো।</div>
+        <div class="pt-row">
+          <label>কোন দিনের রেকর্ড (অতীতও যায়)</label>
+          <input type="date" id="logDate" class="prog-note-input">
+        </div>
         <div class="pt-row">
           <label>বই</label>
           <div id="logBookMount"></div>
@@ -2021,6 +2025,13 @@ window.addEventListener('load', function() {
       });
     });
 
+    // Keep log date in sync (default today; don't overwrite user pick mid-session unless empty)
+    const logDateEl = document.getElementById('logDate');
+    if (logDateEl) {
+      logDateEl.max = dateKeyOf(today);
+      if (!logDateEl.value) logDateEl.value = dateKeyOf(today);
+    }
+
     if (saveBtn.dataset.wired === '1') return;
     saveBtn.dataset.wired = '1';
 
@@ -2038,7 +2049,13 @@ window.addEventListener('load', function() {
     saveBtn.addEventListener('click', (e) => {
       e.preventDefault();
       try {
-        const dk = dateKeyOf(today);
+        const dateEl = document.getElementById('logDate');
+        let dk = (dateEl && dateEl.value) ? dateEl.value : dateKeyOf(today);
+        const maxDk = dateKeyOf(today);
+        if (dk > maxDk) {
+          showToast('ভবিষ্যতের তারিখ দেওয়া যাবে না');
+          return;
+        }
         const bk = (bookHidden && bookHidden.value) || 'phy1';
         const idx = parseInt((document.getElementById('logChapter') || {}).value, 10);
         const progressEl = document.getElementById('logProgress');
@@ -2067,9 +2084,9 @@ window.addEventListener('load', function() {
           showToast('বকেয়া রিভিশন ৩+ · আগে Revision শেষ করো');
           return;
         }
-        // Weekly cap: max 2 new chapters (first-time step1)
-        if (isStep1Done && !alreadySrs && countNewChaptersThisWeek() >= 2) {
-          showToast('এই সপ্তাহে ইতিমধ্যে ২টা নতুন অধ্যায় · আগামী সপ্তাহে');
+        // Weekly cap: max 4 new chapters (first-time step1)
+        if (isStep1Done && !alreadySrs && countNewChaptersThisWeek() >= 4) {
+          showToast('এই সপ্তাহে ইতিমধ্যে ৪টা নতুন অধ্যায় · আগামী সপ্তাহে');
           return;
         }
 
@@ -2089,9 +2106,9 @@ window.addEventListener('load', function() {
           const s1el = document.getElementById('logStep1Score');
           if (s1el && String(s1el.value).trim() !== '') setChapterScore(bk, idx, 'step1', s1el.value);
           if (s1el) s1el.value = '';
-          showToast('ধাপ ১ সম্পন্ন · রিভিশন ঘড়ি চালু (১→৩→৭→১৫→৩০→৯০)');
+          showToast('ধাপ ১ সম্পন্ন (' + dk + ') · রিভিশন ১→৩→৭→১৫→৩০→৯০');
         } else {
-          showToast('প্রোগ্রেস রেকর্ড ✓ · «সব শেষ» চাপলে রিভিশন শুরু');
+          showToast('রেকর্ড ✓ (' + dk + ') · «সব শেষ» হলে রিভিশন শুরু');
         }
 
         if (progressEl) progressEl.value = '';
@@ -2904,7 +2921,7 @@ window.addEventListener('load', function() {
     if (box) {
       box.innerHTML = '<span class="due-pill">আজ ' + br.dueCount + '</span>' +
         '<span class="due-pill over">ওভারডিউ ' + br.overdueCount + '</span>' +
-        '<span class="due-pill">নতুন অধ্যায় এই সপ্তাহে ' + countNewChaptersThisWeek() + '/2</span>';
+        '<span class="due-pill">নতুন অধ্যায় এই সপ্তাহে ' + countNewChaptersThisWeek() + '/4</span>';
     }
   }
 
